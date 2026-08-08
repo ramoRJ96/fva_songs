@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "161557458681",
+    "project_id": "fvasongs-d8055",
+    "storage_bucket": "fvasongs-d8055.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:161557458681:android:598289e616e00d62c9bc28",
+        "android_client_info": {
+          "package_name": "com.fva.songs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAf6JB6wv6uIWQTVFD7f2ndTGXj2-3PX-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

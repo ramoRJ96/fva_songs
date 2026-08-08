@@ -1,4 +1,4 @@
-package com.example.fva_songs
+package com.fva.songs
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,0 +1,42 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fvasongs-d8055",
+          "appId": "1:161557458681:android:598289e616e00d62c9bc28",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "fvasongs-d8055",
+          "appId": "1:161557458681:ios:1a23e02fbdf2d893c9bc28",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fvasongs-d8055",
+          "configurations": {
+            "android": "1:161557458681:android:598289e616e00d62c9bc28",
+            "ios": "1:161557458681:ios:1a23e02fbdf2d893c9bc28"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "europe-west1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "auth": {
+    "providers": {
+      "anonymous": true,
+      "emailPassword": true
+    }
+  }
+}
