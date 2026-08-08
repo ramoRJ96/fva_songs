@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class SuccessModal extends StatelessWidget {
   const SuccessModal({super.key, required this.onConfirm});
@@ -9,6 +11,8 @@ class SuccessModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Dialog(
       backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -32,12 +36,12 @@ class SuccessModal extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Cantique Publié !',
+              l10n.publishSuccessTitle,
               style: AppTextStyles.headlineMd(color: AppColors.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
-              'Le chant a été synchronisé avec succès sur la base de données Sanctuary.',
+              l10n.publishSuccessBody,
               style: AppTextStyles.bodyMd(color: AppColors.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
@@ -55,8 +59,9 @@ class SuccessModal extends StatelessWidget {
                 ),
                 onPressed: onConfirm,
                 child: Text(
-                  'OK',
-                  style: AppTextStyles.labelSm(color: AppColors.onPrimary).copyWith(
+                  l10n.ok,
+                  style: AppTextStyles.labelSm(color: AppColors.onPrimary)
+                      .copyWith(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                   ),

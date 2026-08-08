@@ -1,33 +1,53 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/firebase/firebase_bootstrap.dart';
+import 'core/l10n/fallback_localizations.dart';
+import 'core/l10n/locale_controller.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  // Offline-first : Firebase + auth anonyme + cache Firestore.
+  await FirebaseBootstrap.initialize();
+
+  final prefs = await SharedPreferences.getInstance();
 
   runApp(
-    const ProviderScope(
-      child: FvaSongsApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const FvaSongsApp(),
     ),
   );
 }
 
-class FvaSongsApp extends StatelessWidget {
+class FvaSongsApp extends ConsumerWidget {
   const FvaSongsApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeControllerProvider);
+
     return MaterialApp.router(
-      title: 'Sanctuary',
+      title: 'FVA Songs',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      locale: locale,
+      supportedLocales: supportedAppLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        // mg n'existe pas côté Material/Cupertino → fallback FR
+        FallbackMaterialLocalizationsDelegate(),
+        FallbackCupertinoLocalizationsDelegate(),
+        GlobalWidgetsLocalizations.delegate,
+      ],
       routerConfig: AppRouter.router,
     );
   }

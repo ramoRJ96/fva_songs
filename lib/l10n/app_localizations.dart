@@ -1,0 +1,536 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_fr.dart';
+import 'app_localizations_mg.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('fr'),
+    Locale('mg'),
+  ];
+
+  /// No description provided for @appTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'FVA Songs'**
+  String get appTitle;
+
+  /// No description provided for @navSongs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chants'**
+  String get navSongs;
+
+  /// No description provided for @navFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get navFavorites;
+
+  /// No description provided for @navAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter'**
+  String get navAdd;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un cantique...'**
+  String get searchHint;
+
+  /// No description provided for @allSongs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les chants'**
+  String get allSongs;
+
+  /// No description provided for @resultsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} résultat(s)'**
+  String resultsCount(int count);
+
+  /// No description provided for @filterAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout'**
+  String get filterAll;
+
+  /// No description provided for @filterTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get filterTitle;
+
+  /// No description provided for @filterNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro'**
+  String get filterNumber;
+
+  /// No description provided for @filterAuthor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Auteur'**
+  String get filterAuthor;
+
+  /// No description provided for @filterTheme.
+  ///
+  /// In fr, this message translates to:
+  /// **'Thème'**
+  String get filterTheme;
+
+  /// No description provided for @filterKey.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tonalité'**
+  String get filterKey;
+
+  /// No description provided for @filterLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue'**
+  String get filterLanguage;
+
+  /// No description provided for @filterFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get filterFavorites;
+
+  /// No description provided for @emptySongsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun chant trouvé'**
+  String get emptySongsTitle;
+
+  /// No description provided for @emptySongsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essayez un autre terme ou filtre'**
+  String get emptySongsSubtitle;
+
+  /// No description provided for @emptyFavoritesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun favori pour le moment'**
+  String get emptyFavoritesTitle;
+
+  /// No description provided for @emptyFavoritesSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez des chants à vos favoris en cliquant sur l\'étoile.'**
+  String get emptyFavoritesSubtitle;
+
+  /// No description provided for @songNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chant introuvable'**
+  String get songNotFound;
+
+  /// No description provided for @songDoesNotExist.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce chant n\'existe pas.'**
+  String get songDoesNotExist;
+
+  /// No description provided for @verseOfTheDay.
+  ///
+  /// In fr, this message translates to:
+  /// **'VERSET DU JOUR'**
+  String get verseOfTheDay;
+
+  /// No description provided for @myFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes favoris'**
+  String get myFavorites;
+
+  /// No description provided for @tabFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get tabFavorites;
+
+  /// No description provided for @tabWorshipLists.
+  ///
+  /// In fr, this message translates to:
+  /// **'Listes de culte'**
+  String get tabWorshipLists;
+
+  /// No description provided for @savedTitles.
+  ///
+  /// In fr, this message translates to:
+  /// **'TITRES ENREGISTRÉS'**
+  String get savedTitles;
+
+  /// No description provided for @songsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} chants'**
+  String songsCount(int count);
+
+  /// No description provided for @removeFavorite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer des favoris'**
+  String get removeFavorite;
+
+  /// No description provided for @editorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Éditeur de cantique'**
+  String get editorTitle;
+
+  /// No description provided for @editorSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créez les paroles et métadonnées du chant.'**
+  String get editorSubtitle;
+
+  /// No description provided for @fieldTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'TITRE'**
+  String get fieldTitle;
+
+  /// No description provided for @fieldNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'NUMÉRO'**
+  String get fieldNumber;
+
+  /// No description provided for @fieldAuthor.
+  ///
+  /// In fr, this message translates to:
+  /// **'AUTEUR'**
+  String get fieldAuthor;
+
+  /// No description provided for @fieldTheme.
+  ///
+  /// In fr, this message translates to:
+  /// **'THÈME'**
+  String get fieldTheme;
+
+  /// No description provided for @fieldKey.
+  ///
+  /// In fr, this message translates to:
+  /// **'TONALITÉ'**
+  String get fieldKey;
+
+  /// No description provided for @fieldLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'LANGUE'**
+  String get fieldLanguage;
+
+  /// No description provided for @hintTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex: Grand Dieu, nous te bénissons'**
+  String get hintTitle;
+
+  /// No description provided for @hintNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex: 124'**
+  String get hintNumber;
+
+  /// No description provided for @hintAuthor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Auteur original ou compositeur'**
+  String get hintAuthor;
+
+  /// No description provided for @hintTheme.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex: Adoration, Grâce...'**
+  String get hintTheme;
+
+  /// No description provided for @hintKey.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex: G maj, D min...'**
+  String get hintKey;
+
+  /// No description provided for @languageFrench.
+  ///
+  /// In fr, this message translates to:
+  /// **'Français'**
+  String get languageFrench;
+
+  /// No description provided for @languageMalagasy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Malagasy'**
+  String get languageMalagasy;
+
+  /// No description provided for @addCouplet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couplet'**
+  String get addCouplet;
+
+  /// No description provided for @addRefrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refrain'**
+  String get addRefrain;
+
+  /// No description provided for @addChorus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chorus'**
+  String get addChorus;
+
+  /// No description provided for @coupletLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couplet {index}'**
+  String coupletLabel(int index);
+
+  /// No description provided for @refrainLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refrain'**
+  String get refrainLabel;
+
+  /// No description provided for @chorusLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chorus'**
+  String get chorusLabel;
+
+  /// No description provided for @hintCouplet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez les paroles du couplet...'**
+  String get hintCouplet;
+
+  /// No description provided for @hintRefrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez les paroles du refrain...'**
+  String get hintRefrain;
+
+  /// No description provided for @hintChorus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez les paroles du chorus (optionnel)...'**
+  String get hintChorus;
+
+  /// No description provided for @publish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer le chant'**
+  String get publish;
+
+  /// No description provided for @publishing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement...'**
+  String get publishing;
+
+  /// No description provided for @publishNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le chant sera disponible hors ligne après synchronisation.'**
+  String get publishNote;
+
+  /// No description provided for @publishSuccessTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cantique enregistré !'**
+  String get publishSuccessTitle;
+
+  /// No description provided for @publishSuccessBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le chant a été sauvegardé et sera synchronisé avec FVA Songs.'**
+  String get publishSuccessBody;
+
+  /// No description provided for @validationTitleRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le titre est obligatoire.'**
+  String get validationTitleRequired;
+
+  /// No description provided for @validationSectionRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez au moins une section avec des paroles.'**
+  String get validationSectionRequired;
+
+  /// No description provided for @ok.
+  ///
+  /// In fr, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @switchLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de langue'**
+  String get switchLanguage;
+
+  /// No description provided for @loadingSongs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement des chants...'**
+  String get loadingSongs;
+
+  /// No description provided for @errorLoadingSongs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les chants.'**
+  String get errorLoadingSongs;
+
+  /// No description provided for @sanctuaryModeSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode projection — bientôt disponible'**
+  String get sanctuaryModeSoon;
+
+  /// No description provided for @projectionMode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Projection'**
+  String get projectionMode;
+
+  /// No description provided for @authorLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Auteur'**
+  String get authorLabel;
+
+  /// No description provided for @keyLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tonalité'**
+  String get keyLabel;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['fr', 'mg'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'mg':
+      return AppLocalizationsMg();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

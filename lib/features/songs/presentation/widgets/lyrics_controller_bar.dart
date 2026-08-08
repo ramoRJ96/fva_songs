@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class LyricsControllerBar extends StatelessWidget {
   const LyricsControllerBar({
@@ -24,6 +25,7 @@ class LyricsControllerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface.withOpacity(0.95),
@@ -78,7 +80,6 @@ class LyricsControllerBar extends StatelessWidget {
                     color: AppColors.outlineVariant,
                   ),
                 ),
-                // Mode Sanctuaire
                 Expanded(
                   child: GestureDetector(
                     onTap: onSanctuaryMode,
@@ -90,7 +91,7 @@ class LyricsControllerBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -104,7 +105,7 @@ class LyricsControllerBar extends StatelessWidget {
                               color: AppColors.onPrimary, size: 18),
                           const SizedBox(width: 8),
                           Text(
-                            'Mode Sanctuaire',
+                            l10n.projectionMode,
                             style: AppTextStyles.labelSm(
                                     color: AppColors.onPrimary)
                                 .copyWith(fontWeight: FontWeight.w600),

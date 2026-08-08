@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/responsiveness/extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/song.dart';
-import '../providers/song_list_provider.dart';
-import '../widgets/lyrics_section.dart';
+import '../providers/songs_providers.dart';
 import '../widgets/lyrics_controller_bar.dart';
+import '../widgets/lyrics_section.dart';
 
 class SongDetailScreen extends ConsumerStatefulWidget {
   const SongDetailScreen({
@@ -37,16 +40,16 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final song = ref.watch(songByIdProvider(widget.songId));
+    final isFavorite = ref.watch(isFavoriteProvider(widget.songId));
 
     if (song == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Chant introuvable')),
-        body: const Center(child: Text('Ce chant n\'existe pas.')),
+        appBar: AppBar(title: Text(l10n.songNotFound)),
+        body: Center(child: Text(l10n.songDoesNotExist)),
       );
     }
-
-    final isFavorite = song.isFavorite;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -54,7 +57,7 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 1,
-        shadowColor: Colors.black.withOpacity(0.08),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
@@ -88,26 +91,32 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
               ),
             ),
             onPressed: () {
-              ref.read(songListProvider.notifier).toggleFavorite(song.id);
+              ref.read(favoritesControllerProvider).toggle(
+                    song.id,
+                    currentlyFavorite: isFavorite,
+                  );
             },
           ),
         ],
       ),
-      body: _LyricsBody(song: song, fontSize: _fontSize),
+      body: _LyricsBody(song: song, fontSize: _fontSize, l10n: l10n),
       bottomNavigationBar: LyricsControllerBar(
         fontSize: _fontSize,
         onDecrease: () => _changeFontSize(-2),
         onIncrease: () => _changeFontSize(2),
-        onSanctuaryMode: () => _showSanctuaryModeSnackbar(context),
+        onSanctuaryMode: () => _showSanctuaryModeSnackbar(context, l10n),
       ),
     );
   }
 
-  void _showSanctuaryModeSnackbar(BuildContext context) {
+  void _showSanctuaryModeSnackbar(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Mode Sanctuaire — bientôt disponible',
+          l10n.sanctuaryModeSoon,
           style: AppTextStyles.labelSm(color: Colors.white),
         ),
         backgroundColor: AppColors.primary,
@@ -119,32 +128,59 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
 }
 
 class _LyricsBody extends StatelessWidget {
-  const _LyricsBody({required this.song, required this.fontSize});
+  const _LyricsBody({
+    required this.song,
+    required this.fontSize,
+    required this.l10n,
+  });
 
   final Song song;
   final double fontSize;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
-    // Séparer les sections : numéroter les couplets
-    int coupletIndex = 0;
-
+    final config = context.pageConfig;
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final section in song.sections) ...[
-            LyricsSection(
-              section: section,
-              index: section.type == SectionType.couplet
-                  ? ++coupletIndex
-                  : 0,
-              fontSize: fontSize,
-            ),
-            const SizedBox(height: 32),
+      padding: EdgeInsets.fromLTRB(
+        config.horizontalPadding,
+        24,
+        config.horizontalPadding,
+        120,
+      ),
+      child: ResponsiveContent(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (song.author.isNotEmpty || song.key.isNotEmpty) ...[
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  if (song.author.isNotEmpty)
+                    Text(
+                      '${l10n.authorLabel}: ${song.author}',
+                      style: AppTextStyles.bodyMd(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  if (song.key.isNotEmpty)
+                    Text(
+                      '${l10n.keyLabel}: ${song.key}',
+                      style: AppTextStyles.bodyMd(
+                        color: AppColors.onSurfaceVariant,
+                      ).copyWith(fontWeight: FontWeight.w600),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+            for (final section in song.sections) ...[
+              LyricsSection(section: section, fontSize: fontSize),
+              const SizedBox(height: 32),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
