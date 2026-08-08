@@ -15,7 +15,7 @@ class SongRepositoryImpl implements SongRepository {
   Future<Song?> getById(String id) => _remote.getById(id);
 
   @override
-  Future<Song> addSong(Song song) => _remote.addSong(song);
+  Future<Song> addApprovedSong(Song song) => _remote.addApprovedSong(song);
 
   @override
   Future<void> updateSong(Song song) => _remote.updateSong(song);

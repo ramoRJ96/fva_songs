@@ -5,9 +5,16 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class SuccessModal extends StatelessWidget {
-  const SuccessModal({super.key, required this.onConfirm});
+  const SuccessModal({
+    super.key,
+    required this.onConfirm,
+    this.title,
+    this.body,
+  });
 
   final VoidCallback onConfirm;
+  final String? title;
+  final String? body;
 
   @override
   Widget build(BuildContext context) {
@@ -36,12 +43,13 @@ class SuccessModal extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              l10n.publishSuccessTitle,
+              title ?? l10n.publishSuccessTitle,
               style: AppTextStyles.headlineMd(color: AppColors.onSurface),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.publishSuccessBody,
+              body ?? l10n.publishSuccessBody,
               style: AppTextStyles.bodyMd(color: AppColors.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),

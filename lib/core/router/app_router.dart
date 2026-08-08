@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/add_song/presentation/screens/add_song_screen.dart';
+import '../../features/auth/presentation/screens/admin_login_screen.dart';
 import '../../features/favorites/presentation/screens/favorites_screen.dart';
+import '../../features/moderation/presentation/screens/moderation_screen.dart';
+import '../../features/songs/presentation/providers/songs_providers.dart';
 import '../../features/songs/presentation/screens/song_detail_screen.dart';
 import '../../features/songs/presentation/screens/song_list_screen.dart';
 import '../../l10n/app_localizations.dart';
@@ -54,8 +58,47 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        path: '/edit/:id',
+        name: 'edit-song',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return _EditSongRoute(songId: id);
+        },
+      ),
+      GoRoute(
+        path: '/admin/login',
+        name: 'admin-login',
+        builder: (context, state) => const AdminLoginScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        name: 'admin-moderation',
+        builder: (context, state) => const ModerationScreen(),
+      ),
     ],
   );
+}
+
+class _EditSongRoute extends ConsumerWidget {
+  const _EditSongRoute({required this.songId});
+
+  final String songId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final song = ref.watch(songByIdProvider(songId));
+
+    if (song == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.songNotFound)),
+        body: Center(child: Text(l10n.songDoesNotExist)),
+      );
+    }
+
+    return AddSongScreen(editingSong: song);
+  }
 }
 
 class _ShellScaffold extends StatelessWidget {

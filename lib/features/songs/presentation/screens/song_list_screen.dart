@@ -7,6 +7,7 @@ import '../../../../core/responsiveness/extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/song.dart';
 import '../providers/songs_providers.dart';
 import '../widgets/filter_chips_row.dart';
@@ -50,6 +51,18 @@ class SongListScreen extends ConsumerWidget {
                 ),
                 onPressed: () =>
                     ref.read(localeControllerProvider.notifier).toggle(),
+              ),
+              IconButton(
+                tooltip: l10n.adminAccess,
+                icon: const Icon(
+                  Icons.admin_panel_settings_outlined,
+                  color: AppColors.primary,
+                ),
+                onPressed: () {
+                  final isAdmin =
+                      ref.read(isAdminProvider).valueOrNull ?? false;
+                  context.push(isAdmin ? '/admin' : '/admin/login');
+                },
               ),
             ],
           ),

@@ -33,6 +33,7 @@ class SongModel {
         firstLine: data['firstLine'] as String? ?? '',
         sections: sections,
         searchText: data['searchText'] as String? ?? '',
+        status: SongStatus.fromString(data['status'] as String?),
       ),
     );
   }
@@ -46,6 +47,7 @@ class SongModel {
       'key': song.key,
       'language': song.language.code,
       'firstLine': song.firstLine,
+      'status': song.status.name,
       'searchText': song.searchText.isNotEmpty
           ? song.searchText
           : buildSearchText(song),

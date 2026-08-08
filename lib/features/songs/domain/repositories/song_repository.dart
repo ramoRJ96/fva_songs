@@ -7,8 +7,8 @@ abstract class SongRepository {
 
   Future<Song?> getById(String id);
 
-  /// Crée un chant et retourne l'entité avec son id généré.
-  Future<Song> addSong(Song song);
+  /// Crée un chant approuvé (admin) et retourne l'entité avec son id généré.
+  Future<Song> addApprovedSong(Song song);
 
   Future<void> updateSong(Song song);
 

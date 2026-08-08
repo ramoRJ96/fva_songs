@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,21 +12,26 @@ import 'core/theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  // Offline-first : Firebase + auth anonyme + cache Firestore.
-  await FirebaseBootstrap.initialize();
+  try {
+    // Offline-first : Firebase + auth anonyme + cache Firestore.
+    await FirebaseBootstrap.initialize();
 
-  final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
-      child: const FvaSongsApp(),
-    ),
-  );
+    runApp(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const FvaSongsApp(),
+      ),
+    );
+  } finally {
+    FlutterNativeSplash.remove();
+  }
 }
 
 class FvaSongsApp extends ConsumerWidget {

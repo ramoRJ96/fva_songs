@@ -15,11 +15,12 @@ class SongRemoteDataSource {
   CollectionReference<Map<String, dynamic>> get _songs =>
       _firestore.collection('songs');
 
+  /// Catalogue public : uniquement les chants approuvés (status absent = approuvé).
   Stream<List<Song>> watchSongs() {
-    // orderBy peut échouer si certains docs n'ont pas le champ ; on trie en mémoire.
     return _songs.snapshots().map((snapshot) {
       final songs = snapshot.docs
           .map((doc) => SongModel.fromFirestore(doc.id, doc.data()).song)
+          .where((song) => song.status == SongStatus.approved)
           .toList()
         ..sort((a, b) => a.number.compareTo(b.number));
       return songs;
@@ -29,18 +30,30 @@ class SongRemoteDataSource {
   Future<Song?> getById(String id) async {
     final doc = await _songs.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;
-    return SongModel.fromFirestore(doc.id, doc.data()!).song;
+    final song = SongModel.fromFirestore(doc.id, doc.data()!).song;
+    if (song.status != SongStatus.approved) return null;
+    return song;
   }
 
-  Future<Song> addSong(Song song) async {
+  /// Publication directe (admin) — chant visible immédiatement.
+  Future<Song> addApprovedSong(Song song) async {
     final searchText = SongModel.buildSearchText(song);
-    final toSave = song.copyWith(searchText: searchText);
+    final toSave = song.copyWith(
+      searchText: searchText,
+      status: SongStatus.approved,
+    );
     final docRef = await _songs.add(SongModel(toSave).toFirestore());
     return toSave.copyWith(id: docRef.id);
   }
 
+  @Deprecated('Utiliser addApprovedSong (admin) ou les soumissions')
+  Future<Song> addSong(Song song) => addApprovedSong(song);
+
   Future<void> updateSong(Song song) async {
-    final toSave = song.copyWith(searchText: SongModel.buildSearchText(song));
+    final toSave = song.copyWith(
+      searchText: SongModel.buildSearchText(song),
+      status: SongStatus.approved,
+    );
     await _songs.doc(song.id).set(
           SongModel(toSave).toFirestore(),
           SetOptions(merge: true),

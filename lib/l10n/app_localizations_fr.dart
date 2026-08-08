@@ -172,21 +172,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hintChorus => 'Saisissez les paroles du chorus (optionnel)...';
 
   @override
-  String get publish => 'Enregistrer le chant';
+  String get publish => 'Proposer le chant';
 
   @override
-  String get publishing => 'Enregistrement...';
+  String get publishing => 'Envoi...';
 
   @override
   String get publishNote =>
-      'Le chant sera disponible hors ligne après synchronisation.';
+      'Votre proposition sera validée par un administrateur avant d\'apparaître dans le catalogue.';
 
   @override
-  String get publishSuccessTitle => 'Cantique enregistré !';
+  String get publishNoteAdmin =>
+      'Connecté en admin : le chant sera publié immédiatement.';
+
+  @override
+  String get publishSuccessTitle => 'Cantique publié !';
 
   @override
   String get publishSuccessBody =>
-      'Le chant a été sauvegardé et sera synchronisé avec FVA Songs.';
+      'Le chant est maintenant visible dans le catalogue.';
+
+  @override
+  String get submitPendingTitle => 'Proposition envoyée !';
+
+  @override
+  String get submitPendingBody =>
+      'Merci. Un administrateur validera l\'ajout ou la modification avant publication.';
+
+  @override
+  String get submitEdit => 'Proposer la modification';
+
+  @override
+  String get editorEditTitle => 'Modifier le cantique';
+
+  @override
+  String get editorEditSubtitle =>
+      'Les changements seront soumis à validation (sauf admin).';
+
+  @override
+  String get editSong => 'Modifier';
 
   @override
   String get validationTitleRequired => 'Le titre est obligatoire.';
@@ -218,4 +242,60 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keyLabel => 'Tonalité';
+
+  @override
+  String get adminAccess => 'Administration';
+
+  @override
+  String get adminLoginTitle => 'Connexion admin';
+
+  @override
+  String get adminLoginSubtitle =>
+      'Connectez-vous pour valider les ajouts et modifications.';
+
+  @override
+  String get adminEmail => 'E-mail';
+
+  @override
+  String get adminPassword => 'Mot de passe';
+
+  @override
+  String get adminSignIn => 'Se connecter';
+
+  @override
+  String get adminSignOut => 'Déconnexion';
+
+  @override
+  String get adminLoginFieldsRequired => 'E-mail et mot de passe requis.';
+
+  @override
+  String get adminLoginFailed => 'Identifiants incorrects.';
+
+  @override
+  String get adminLoginTooMany => 'Trop de tentatives. Réessayez plus tard.';
+
+  @override
+  String get adminNotAuthorized => 'Ce compte n\'est pas administrateur.';
+
+  @override
+  String get moderationTitle => 'Validation';
+
+  @override
+  String get moderationEmptyTitle => 'Aucune proposition en attente';
+
+  @override
+  String get moderationEmptySubtitle =>
+      'Les ajouts et modifications soumis par les utilisateurs apparaîtront ici.';
+
+  @override
+  String get moderationTypeCreate => 'Nouvel ajout';
+
+  @override
+  String get moderationTypeUpdate => 'Modification';
+
+  @override
+  String get moderationApprove => 'Approuver';
+
+  @override
+  String get moderationReject => 'Refuser';
 }

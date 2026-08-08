@@ -91,7 +91,7 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.08),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         titleTextStyle: GoogleFonts.inter(
           fontSize: 24,
           fontWeight: FontWeight.w600,
@@ -105,7 +105,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: AppColors.outlineVariant.withOpacity(0.3),
+            color: AppColors.outlineVariant.withValues(alpha: 0.3),
           ),
         ),
       ),

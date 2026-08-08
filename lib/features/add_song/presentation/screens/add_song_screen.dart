@@ -6,13 +6,17 @@ import '../../../../core/responsiveness/extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../songs/domain/entities/song.dart';
 import '../../../songs/presentation/providers/songs_providers.dart';
 import '../widgets/lyric_section_editor.dart';
 import '../widgets/success_modal.dart';
 
 class AddSongScreen extends ConsumerStatefulWidget {
-  const AddSongScreen({super.key});
+  const AddSongScreen({super.key, this.editingSong});
+
+  /// Si non null, le formulaire est en mode modification.
+  final Song? editingSong;
 
   @override
   ConsumerState<AddSongScreen> createState() => _AddSongScreenState();
@@ -44,13 +48,70 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
   int _coupletCount = 0;
   bool _isSubmitting = false;
 
+  bool get _isEditing => widget.editingSong != null;
+
   @override
   void initState() {
     super.initState();
-    // Sections de départ : 1 couplet + 1 refrain.
+    final song = widget.editingSong;
+    if (song != null) {
+      _titleController.text = song.title;
+      _numberController.text = song.number;
+      _authorController.text = song.author;
+      _themeController.text = song.theme;
+      _keyController.text = song.key;
+      _language = song.language;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _addCouplet();
-      _addRefrain();
+      if (song != null) {
+        _hydrateSections(song);
+      } else {
+        _addCouplet();
+        _addRefrain();
+      }
+    });
+  }
+
+  void _hydrateSections(Song song) {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _sections.clear();
+      _coupletCount = 0;
+      for (final section in song.sections) {
+        switch (section.type) {
+          case SectionType.couplet:
+            _coupletCount++;
+            _sections.add(
+              _SectionItemData(
+                type: SectionType.couplet,
+                index: section.index ?? _coupletCount,
+                title: l10n.coupletLabel(section.index ?? _coupletCount),
+                initialText: section.lines.join('\n'),
+              ),
+            );
+          case SectionType.refrain:
+            _sections.add(
+              _SectionItemData(
+                type: SectionType.refrain,
+                title: l10n.refrainLabel,
+                initialText: section.lines.join('\n'),
+              ),
+            );
+          case SectionType.chorus:
+            _sections.add(
+              _SectionItemData(
+                type: SectionType.chorus,
+                title: l10n.chorusLabel,
+                initialText: section.lines.join('\n'),
+              ),
+            );
+        }
+      }
+      if (_sections.isEmpty) {
+        _addCouplet();
+        _addRefrain();
+      }
     });
   }
 
@@ -178,7 +239,7 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      await ref.read(addSongControllerProvider).add(
+      final outcome = await ref.read(addSongControllerProvider).save(
             title: title,
             number: _numberController.text,
             author: _authorController.text,
@@ -186,17 +247,29 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
             key: _keyController.text,
             language: _language,
             sections: sections,
+            editingSongId: widget.editingSong?.id,
           );
 
       if (!mounted) return;
       setState(() => _isSubmitting = false);
 
+      final pending = outcome == SongSaveOutcome.pendingReview;
       await showDialog<void>(
         context: context,
         builder: (context) => SuccessModal(
+          title: pending
+              ? l10n.submitPendingTitle
+              : l10n.publishSuccessTitle,
+          body: pending
+              ? l10n.submitPendingBody
+              : l10n.publishSuccessBody,
           onConfirm: () {
             Navigator.of(context).pop();
-            context.go('/');
+            if (_isEditing) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/');
+            }
           },
         ),
       );
@@ -290,6 +363,12 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
+        leading: _isEditing
+            ? IconButton(
+                icon: const Icon(Icons.close, color: AppColors.primary),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         title: Text(
           l10n.appTitle,
           style: AppTextStyles.headlineLgMobile(color: AppColors.primary),
@@ -306,12 +385,12 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                l10n.editorTitle,
+                _isEditing ? l10n.editorEditTitle : l10n.editorTitle,
                 style: AppTextStyles.headlineMd(color: AppColors.onSurface),
               ),
               const SizedBox(height: 4),
               Text(
-                l10n.editorSubtitle,
+                _isEditing ? l10n.editorEditSubtitle : l10n.editorSubtitle,
                 style: AppTextStyles.bodyMd(color: AppColors.onSurfaceVariant),
               ),
               const SizedBox(height: 24),
@@ -442,7 +521,9 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
                         )
                       : const Icon(Icons.save_outlined),
                   label: Text(
-                    _isSubmitting ? l10n.publishing : l10n.publish,
+                    _isSubmitting
+                        ? l10n.publishing
+                        : (_isEditing ? l10n.submitEdit : l10n.publish),
                     style: AppTextStyles.headlineMd(color: AppColors.onPrimary)
                         .copyWith(fontSize: 18),
                   ),
@@ -451,7 +532,9 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  l10n.publishNote,
+                  (ref.watch(isAdminProvider).valueOrNull ?? false)
+                      ? l10n.publishNoteAdmin
+                      : l10n.publishNote,
                   style:
                       AppTextStyles.labelSm(color: AppColors.onSurfaceVariant),
                   textAlign: TextAlign.center,

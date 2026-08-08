@@ -42,6 +42,21 @@ class LyricSection {
   final bool isBis;
 }
 
+/// Statut de publication d'un chant dans le catalogue.
+enum SongStatus {
+  /// Visible par tous les utilisateurs.
+  approved,
+
+  /// Non visible (legacy / brouillon éventuel).
+  pending;
+
+  static SongStatus fromString(String? value) {
+    if (value == 'pending') return SongStatus.pending;
+    // Absent ou inconnu → traité comme approuvé (migration douce).
+    return SongStatus.approved;
+  }
+}
+
 /// Entité domaine : un cantique / chant d'église.
 ///
 /// Indépendante de Firestore (Clean Architecture — couche Domain).
@@ -57,6 +72,7 @@ class Song {
     required this.firstLine,
     required this.sections,
     this.searchText = '',
+    this.status = SongStatus.approved,
   });
 
   final String id;
@@ -76,6 +92,8 @@ class Song {
   /// Texte normalisé pour la recherche rapide (dénormalisé à l'écriture).
   final String searchText;
 
+  final SongStatus status;
+
   Song copyWith({
     String? id,
     String? title,
@@ -87,6 +105,7 @@ class Song {
     String? firstLine,
     List<LyricSection>? sections,
     String? searchText,
+    SongStatus? status,
   }) {
     return Song(
       id: id ?? this.id,
@@ -99,6 +118,7 @@ class Song {
       firstLine: firstLine ?? this.firstLine,
       sections: sections ?? this.sections,
       searchText: searchText ?? this.searchText,
+      status: status ?? this.status,
     );
   }
 }

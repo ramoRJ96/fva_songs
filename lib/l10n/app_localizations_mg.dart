@@ -172,21 +172,43 @@ class AppLocalizationsMg extends AppLocalizations {
   String get hintChorus => 'Soraty eto ny chorus (tiana)...';
 
   @override
-  String get publish => 'Tehirizo ny hira';
+  String get publish => 'Alefaso ny hira';
 
   @override
-  String get publishing => 'Tehirizina...';
+  String get publishing => 'Alefa...';
 
   @override
   String get publishNote =>
-      'Azo ampiasaina ivelan\'ny aterineto ny hira aorian\'ny sync.';
+      'Hamarinina aloha ny soso-kevitrao alohan\'ny hiseho amin\'ny lisitra.';
 
   @override
-  String get publishSuccessTitle => 'Voatahiry ny hira!';
+  String get publishNoteAdmin => 'Admin ianao: hiseho avy hatrany ny hira.';
 
   @override
-  String get publishSuccessBody =>
-      'Voatahiry ny hira ary hifanaraka amin\'i FVA Songs.';
+  String get publishSuccessTitle => 'Navoaka ny hira!';
+
+  @override
+  String get publishSuccessBody => 'Hita ao amin\'ny lisitra izao ny hira.';
+
+  @override
+  String get submitPendingTitle => 'Nalefa ny soso-kevitra!';
+
+  @override
+  String get submitPendingBody =>
+      'Misaotra. Hamarinina aloha ny fanampiana na fanovana.';
+
+  @override
+  String get submitEdit => 'Alefaso ny fanovana';
+
+  @override
+  String get editorEditTitle => 'Hanova hira';
+
+  @override
+  String get editorEditSubtitle =>
+      'Hamarinina aloha ny fanovana (afa-tsy admin).';
+
+  @override
+  String get editSong => 'Hanova';
 
   @override
   String get validationTitleRequired => 'Ilaina ny lohateny.';
@@ -218,4 +240,60 @@ class AppLocalizationsMg extends AppLocalizations {
 
   @override
   String get keyLabel => 'Feo';
+
+  @override
+  String get adminAccess => 'Fitantanana';
+
+  @override
+  String get adminLoginTitle => 'Fidiran\'ny admin';
+
+  @override
+  String get adminLoginSubtitle =>
+      'Midira mba hanamarina ny fanampiana sy fanovana.';
+
+  @override
+  String get adminEmail => 'Mailaka';
+
+  @override
+  String get adminPassword => 'Tenimiafina';
+
+  @override
+  String get adminSignIn => 'Hiditra';
+
+  @override
+  String get adminSignOut => 'Hivoaka';
+
+  @override
+  String get adminLoginFieldsRequired => 'Ilaina ny mailaka sy ny tenimiafina.';
+
+  @override
+  String get adminLoginFailed => 'Diso ny fanamarinana.';
+
+  @override
+  String get adminLoginTooMany => 'Be loatra ny fanandramana. Andramo indray.';
+
+  @override
+  String get adminNotAuthorized => 'Tsy admin io kaonty io.';
+
+  @override
+  String get moderationTitle => 'Fanamarinana';
+
+  @override
+  String get moderationEmptyTitle => 'Tsy misy soso-kevitra miandry';
+
+  @override
+  String get moderationEmptySubtitle =>
+      'Hiseho eto ny fanampiana sy fanovana alefan\'ny mpampiasa.';
+
+  @override
+  String get moderationTypeCreate => 'Fanampiana vaovao';
+
+  @override
+  String get moderationTypeUpdate => 'Fanovana';
+
+  @override
+  String get moderationApprove => 'Ekeno';
+
+  @override
+  String get moderationReject => 'Aza ekena';
 }

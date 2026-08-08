@@ -2,13 +2,18 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/datasources/favorite_remote_datasource.dart';
 import '../../data/datasources/song_remote_datasource.dart';
+import '../../data/datasources/song_submission_remote_datasource.dart';
 import '../../data/repositories/favorite_repository_impl.dart';
 import '../../data/repositories/song_repository_impl.dart';
+import '../../data/repositories/song_submission_repository_impl.dart';
 import '../../domain/entities/song.dart';
+import '../../domain/entities/song_submission.dart';
 import '../../domain/repositories/favorite_repository.dart';
 import '../../domain/repositories/song_repository.dart';
+import '../../domain/repositories/song_submission_repository.dart';
 import '../../domain/services/song_filter_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -19,6 +24,13 @@ final songRemoteDataSourceProvider = Provider<SongRemoteDataSource>((ref) {
   return SongRemoteDataSource();
 });
 
+final songSubmissionRemoteDataSourceProvider =
+    Provider<SongSubmissionRemoteDataSource>((ref) {
+  return SongSubmissionRemoteDataSource(
+    songs: ref.watch(songRemoteDataSourceProvider),
+  );
+});
+
 final favoriteRemoteDataSourceProvider =
     Provider<FavoriteRemoteDataSource>((ref) {
   return FavoriteRemoteDataSource();
@@ -26,6 +38,13 @@ final favoriteRemoteDataSourceProvider =
 
 final songRepositoryProvider = Provider<SongRepository>((ref) {
   return SongRepositoryImpl(ref.watch(songRemoteDataSourceProvider));
+});
+
+final songSubmissionRepositoryProvider =
+    Provider<SongSubmissionRepository>((ref) {
+  return SongSubmissionRepositoryImpl(
+    ref.watch(songSubmissionRemoteDataSourceProvider),
+  );
 });
 
 final favoriteRepositoryProvider = Provider<FavoriteRepository>((ref) {
@@ -120,19 +139,34 @@ final filteredSongsProvider = Provider<List<Song>>((ref) {
 });
 
 // ---------------------------------------------------------------------------
-// Ajout de chant
+// Ajout / modification de chant (soumission ou publish admin)
 // ---------------------------------------------------------------------------
 
+/// Résultat d'un enregistrement : publié tout de suite ou en attente.
+enum SongSaveOutcome { published, pendingReview }
+
 final addSongControllerProvider = Provider<AddSongController>((ref) {
-  return AddSongController(ref.watch(songRepositoryProvider));
+  return AddSongController(
+    songs: ref.watch(songRepositoryProvider),
+    submissions: ref.watch(songSubmissionRepositoryProvider),
+    isAdmin: () => ref.read(isAdminProvider).valueOrNull ?? false,
+  );
 });
 
 class AddSongController {
-  AddSongController(this._repository);
+  AddSongController({
+    required SongRepository songs,
+    required SongSubmissionRepository submissions,
+    required bool Function() isAdmin,
+  })  : _songs = songs,
+        _submissions = submissions,
+        _isAdmin = isAdmin;
 
-  final SongRepository _repository;
+  final SongRepository _songs;
+  final SongSubmissionRepository _submissions;
+  final bool Function() _isAdmin;
 
-  Future<Song> add({
+  Future<SongSaveOutcome> save({
     required String title,
     required String number,
     required String author,
@@ -140,10 +174,11 @@ class AddSongController {
     required String key,
     required SongLanguage language,
     required List<LyricSection> sections,
-  }) {
+    String? editingSongId,
+  }) async {
     final firstLine = _computeFirstLine(sections);
     final song = Song(
-      id: '',
+      id: editingSongId ?? '',
       title: title.trim(),
       number: number.trim(),
       author: author.trim(),
@@ -152,8 +187,30 @@ class AddSongController {
       language: language,
       firstLine: firstLine,
       sections: sections,
+      status: SongStatus.approved,
     );
-    return _repository.addSong(song);
+
+    final admin = _isAdmin();
+    final isEdit = editingSongId != null && editingSongId.isNotEmpty;
+
+    if (admin) {
+      if (isEdit) {
+        await _songs.updateSong(song);
+      } else {
+        await _songs.addApprovedSong(song);
+      }
+      return SongSaveOutcome.published;
+    }
+
+    if (isEdit) {
+      await _submissions.submitUpdate(
+        targetSongId: editingSongId,
+        song: song,
+      );
+    } else {
+      await _submissions.submitCreate(song);
+    }
+    return SongSaveOutcome.pendingReview;
   }
 
   String _computeFirstLine(List<LyricSection> sections) {
@@ -167,6 +224,30 @@ class AddSongController {
     }
     return '';
   }
+}
+
+// ---------------------------------------------------------------------------
+// Modération admin
+// ---------------------------------------------------------------------------
+
+final pendingSubmissionsProvider =
+    StreamProvider<List<SongSubmission>>((ref) {
+  return ref.watch(songSubmissionRepositoryProvider).watchPending();
+});
+
+final moderationControllerProvider = Provider<ModerationController>((ref) {
+  return ModerationController(ref.watch(songSubmissionRepositoryProvider));
+});
+
+class ModerationController {
+  ModerationController(this._repository);
+
+  final SongSubmissionRepository _repository;
+
+  Future<void> approve(SongSubmission submission) =>
+      _repository.approve(submission);
+
+  Future<void> reject(String submissionId) => _repository.reject(submissionId);
 }
 
 /// Helper debounce pour la barre de recherche.

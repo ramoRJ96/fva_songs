@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsiveness/extensions.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -78,6 +79,11 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            tooltip: l10n.editSong,
+            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+            onPressed: () => context.push('/edit/${song.id}'),
+          ),
           IconButton(
             icon: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),

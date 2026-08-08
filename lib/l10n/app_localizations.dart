@@ -413,32 +413,74 @@ abstract class AppLocalizations {
   /// No description provided for @publish.
   ///
   /// In fr, this message translates to:
-  /// **'Enregistrer le chant'**
+  /// **'Proposer le chant'**
   String get publish;
 
   /// No description provided for @publishing.
   ///
   /// In fr, this message translates to:
-  /// **'Enregistrement...'**
+  /// **'Envoi...'**
   String get publishing;
 
   /// No description provided for @publishNote.
   ///
   /// In fr, this message translates to:
-  /// **'Le chant sera disponible hors ligne après synchronisation.'**
+  /// **'Votre proposition sera validée par un administrateur avant d\'apparaître dans le catalogue.'**
   String get publishNote;
+
+  /// No description provided for @publishNoteAdmin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecté en admin : le chant sera publié immédiatement.'**
+  String get publishNoteAdmin;
 
   /// No description provided for @publishSuccessTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Cantique enregistré !'**
+  /// **'Cantique publié !'**
   String get publishSuccessTitle;
 
   /// No description provided for @publishSuccessBody.
   ///
   /// In fr, this message translates to:
-  /// **'Le chant a été sauvegardé et sera synchronisé avec FVA Songs.'**
+  /// **'Le chant est maintenant visible dans le catalogue.'**
   String get publishSuccessBody;
+
+  /// No description provided for @submitPendingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Proposition envoyée !'**
+  String get submitPendingTitle;
+
+  /// No description provided for @submitPendingBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Merci. Un administrateur validera l\'ajout ou la modification avant publication.'**
+  String get submitPendingBody;
+
+  /// No description provided for @submitEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Proposer la modification'**
+  String get submitEdit;
+
+  /// No description provided for @editorEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le cantique'**
+  String get editorEditTitle;
+
+  /// No description provided for @editorEditSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les changements seront soumis à validation (sauf admin).'**
+  String get editorEditSubtitle;
+
+  /// No description provided for @editSong.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get editSong;
 
   /// No description provided for @validationTitleRequired.
   ///
@@ -499,6 +541,114 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Tonalité'**
   String get keyLabel;
+
+  /// No description provided for @adminAccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Administration'**
+  String get adminAccess;
+
+  /// No description provided for @adminLoginTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion admin'**
+  String get adminLoginTitle;
+
+  /// No description provided for @adminLoginSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour valider les ajouts et modifications.'**
+  String get adminLoginSubtitle;
+
+  /// No description provided for @adminEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail'**
+  String get adminEmail;
+
+  /// No description provided for @adminPassword.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot de passe'**
+  String get adminPassword;
+
+  /// No description provided for @adminSignIn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter'**
+  String get adminSignIn;
+
+  /// No description provided for @adminSignOut.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déconnexion'**
+  String get adminSignOut;
+
+  /// No description provided for @adminLoginFieldsRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail et mot de passe requis.'**
+  String get adminLoginFieldsRequired;
+
+  /// No description provided for @adminLoginFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identifiants incorrects.'**
+  String get adminLoginFailed;
+
+  /// No description provided for @adminLoginTooMany.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de tentatives. Réessayez plus tard.'**
+  String get adminLoginTooMany;
+
+  /// No description provided for @adminNotAuthorized.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce compte n\'est pas administrateur.'**
+  String get adminNotAuthorized;
+
+  /// No description provided for @moderationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validation'**
+  String get moderationTitle;
+
+  /// No description provided for @moderationEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune proposition en attente'**
+  String get moderationEmptyTitle;
+
+  /// No description provided for @moderationEmptySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les ajouts et modifications soumis par les utilisateurs apparaîtront ici.'**
+  String get moderationEmptySubtitle;
+
+  /// No description provided for @moderationTypeCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvel ajout'**
+  String get moderationTypeCreate;
+
+  /// No description provided for @moderationTypeUpdate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modification'**
+  String get moderationTypeUpdate;
+
+  /// No description provided for @moderationApprove.
+  ///
+  /// In fr, this message translates to:
+  /// **'Approuver'**
+  String get moderationApprove;
+
+  /// No description provided for @moderationReject.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser'**
+  String get moderationReject;
 }
 
 class _AppLocalizationsDelegate
