@@ -38,5 +38,19 @@
       "anonymous": true,
       "emailPassword": true
     }
+  },
+  "hosting": {
+    "public": "hosting",
+    "ignore": ["firebase.json", "**/.*"],
+    "headers": [
+      {
+        "source": "/fva-songs.bin",
+        "headers": [
+          { "key": "Content-Type", "value": "application/vnd.android.package-archive" },
+          { "key": "Content-Disposition", "value": "attachment; filename=\"fva-songs.apk\"" },
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      }
+    ]
   }
 }

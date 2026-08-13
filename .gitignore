@@ -46,3 +46,15 @@ app.*.map.json
 
 # Local Android/Flutter SDK paths
 **/local.properties
+
+# Release signing (never commit the keystore or its credentials)
+/android/key.properties
+/android/keystore/
+
+# Built binaries served via Firebase Hosting (re-copied before each deploy)
+/hosting/*.apk
+/hosting/*.ipa
+/hosting/*.bin
+
+# Firebase CLI deploy cache
+/.firebase/
