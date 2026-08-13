@@ -94,6 +94,38 @@ class Song {
 
   final SongStatus status;
 
+  /// Sections réordonnées pour l'affichage : le(s) refrain(s)/chorus sont
+  /// déplacés juste après le 1er couplet (usage liturgique), quel que soit
+  /// leur ordre d'origine dans le texte source.
+  List<LyricSection> get sectionsForDisplay {
+    final firstCoupletIndex = sections.indexWhere(
+      (s) => s.type == SectionType.couplet,
+    );
+    if (firstCoupletIndex == -1) return sections;
+
+    final refrains = <LyricSection>[];
+    final rest = <LyricSection>[];
+    for (final section in sections) {
+      if (section.type == SectionType.refrain ||
+          section.type == SectionType.chorus) {
+        refrains.add(section);
+      } else {
+        rest.add(section);
+      }
+    }
+    if (refrains.isEmpty) return sections;
+
+    final firstCoupletPos = rest.indexWhere(
+      (s) => s.type == SectionType.couplet,
+    );
+
+    return [
+      ...rest.sublist(0, firstCoupletPos + 1),
+      ...refrains,
+      ...rest.sublist(firstCoupletPos + 1),
+    ];
+  }
+
   Song copyWith({
     String? id,
     String? title,

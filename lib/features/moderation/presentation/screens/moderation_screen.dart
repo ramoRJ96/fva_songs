@@ -66,7 +66,9 @@ class ModerationScreen extends ConsumerWidget {
                         Icon(
                           Icons.verified_outlined,
                           size: 48,
-                          color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+                          color: AppColors.onSurfaceVariant.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -121,9 +123,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
   Future<void> _approve() async {
     setState(() => _busy = true);
     try {
-      await ref
-          .read(moderationControllerProvider)
-          .approve(widget.submission);
+      await ref.read(moderationControllerProvider).approve(widget.submission);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -137,9 +137,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
   Future<void> _reject() async {
     setState(() => _busy = true);
     try {
-      await ref
-          .read(moderationControllerProvider)
-          .reject(widget.submission.id);
+      await ref.read(moderationControllerProvider).reject(widget.submission.id);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -155,8 +153,9 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
     final l10n = AppLocalizations.of(context);
     final song = widget.submission.payload;
     final isUpdate = widget.submission.type == SubmissionType.update;
-    final typeLabel =
-        isUpdate ? l10n.moderationTypeUpdate : l10n.moderationTypeCreate;
+    final typeLabel = isUpdate
+        ? l10n.moderationTypeUpdate
+        : l10n.moderationTypeCreate;
 
     return Material(
       color: AppColors.surfaceContainerLow,
@@ -261,11 +260,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
     );
   }
 
-  void _showDetails(
-    BuildContext context,
-    AppLocalizations l10n,
-    Song song,
-  ) {
+  void _showDetails(BuildContext context, AppLocalizations l10n, Song song) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -301,7 +296,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                for (final section in song.sections) ...[
+                for (final section in song.sectionsForDisplay) ...[
                   Text(
                     _sectionTitle(section, l10n),
                     style: AppTextStyles.labelCaps(color: AppColors.primary),

@@ -71,8 +71,9 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
             ),
             Text(
               song.title,
-              style: AppTextStyles.headlineMd(color: AppColors.primary)
-                  .copyWith(fontSize: 18),
+              style: AppTextStyles.headlineMd(
+                color: AppColors.primary,
+              ).copyWith(fontSize: 18),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -97,10 +98,9 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
               ),
             ),
             onPressed: () {
-              ref.read(favoritesControllerProvider).toggle(
-                    song.id,
-                    currentlyFavorite: isFavorite,
-                  );
+              ref
+                  .read(favoritesControllerProvider)
+                  .toggle(song.id, currentlyFavorite: isFavorite);
             },
           ),
         ],
@@ -115,10 +115,7 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
     );
   }
 
-  void _showSanctuaryModeSnackbar(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
+  void _showSanctuaryModeSnackbar(BuildContext context, AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -181,7 +178,7 @@ class _LyricsBody extends StatelessWidget {
               ),
               const SizedBox(height: 24),
             ],
-            for (final section in song.sections) ...[
+            for (final section in song.sectionsForDisplay) ...[
               LyricsSection(section: section, fontSize: fontSize),
               const SizedBox(height: 32),
             ],

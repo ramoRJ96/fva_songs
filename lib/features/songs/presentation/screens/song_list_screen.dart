@@ -27,110 +27,126 @@ class SongListScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: AppColors.surface,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            shadowColor: Colors.black.withValues(alpha: 0.08),
-            forceElevated: true,
-            title: Text(
-              l10n.appTitle,
-              style: AppTextStyles.headlineLgMobile(color: AppColors.primary),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async {
+          ref.invalidate(songsCatalogProvider);
+          try {
+            await ref.read(songsCatalogProvider.future);
+          } catch (_) {
+            // L'état d'erreur est déjà géré par catalogAsync.when ci-dessous.
+          }
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: AppColors.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              shadowColor: Colors.black.withValues(alpha: 0.08),
+              forceElevated: true,
+              title: Text(
+                l10n.appTitle,
+                style: AppTextStyles.headlineLgMobile(color: AppColors.primary),
+              ),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  tooltip: l10n.switchLanguage,
+                  icon: Text(
+                    ref
+                        .watch(localeControllerProvider)
+                        .languageCode
+                        .toUpperCase(),
+                    style: AppTextStyles.labelSm(
+                      color: AppColors.primary,
+                    ).copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  onPressed: () =>
+                      ref.read(localeControllerProvider.notifier).toggle(),
+                ),
+                IconButton(
+                  tooltip: l10n.adminAccess,
+                  icon: const Icon(
+                    Icons.admin_panel_settings_outlined,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: () {
+                    final isAdmin =
+                        ref.read(isAdminProvider).valueOrNull ?? false;
+                    context.push(isAdmin ? '/admin' : '/admin/login');
+                  },
+                ),
+              ],
             ),
-            centerTitle: true,
-            actions: [
-              IconButton(
-                tooltip: l10n.switchLanguage,
-                icon: Text(
-                  ref.watch(localeControllerProvider).languageCode.toUpperCase(),
-                  style: AppTextStyles.labelSm(color: AppColors.primary)
-                      .copyWith(fontWeight: FontWeight.w700),
+            SliverToBoxAdapter(
+              child: ResponsiveContent(
+                padding: EdgeInsets.symmetric(
+                  horizontal: config.horizontalPadding,
                 ),
-                onPressed: () =>
-                    ref.read(localeControllerProvider.notifier).toggle(),
-              ),
-              IconButton(
-                tooltip: l10n.adminAccess,
-                icon: const Icon(
-                  Icons.admin_panel_settings_outlined,
-                  color: AppColors.primary,
-                ),
-                onPressed: () {
-                  final isAdmin =
-                      ref.read(isAdminProvider).valueOrNull ?? false;
-                  context.push(isAdmin ? '/admin' : '/admin/login');
-                },
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: ResponsiveContent(
-              padding: EdgeInsets.symmetric(
-                horizontal: config.horizontalPadding,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: config.verticalPadding),
-                  const SearchBarWidget(),
-                  const SizedBox(height: 12),
-                  const FilterChipsRow(),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.allSongs,
-                        style: AppTextStyles.headlineMd(
-                          color: AppColors.onSurface,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: config.verticalPadding),
+                    const SearchBarWidget(),
+                    const SizedBox(height: 12),
+                    const FilterChipsRow(),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.allSongs,
+                          style: AppTextStyles.headlineMd(
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                      ),
-                      Text(
-                        l10n.resultsCount(songs.length),
-                        style: AppTextStyles.labelSm(
-                          color: AppColors.onSurfaceVariant,
+                        Text(
+                          l10n.resultsCount(songs.length),
+                          style: AppTextStyles.labelSm(
+                            color: AppColors.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
-          ),
-          catalogAsync.when(
-            loading: () => SliverFillRemaining(
-              child: Center(child: Text(l10n.loadingSongs)),
-            ),
-            error: (_, _) => SliverFillRemaining(
-              child: Center(child: Text(l10n.errorLoadingSongs)),
-            ),
-            data: (_) {
-              if (songs.isEmpty) {
-                return const SliverFillRemaining(child: _EmptyState());
-              }
-              return SliverToBoxAdapter(
-                child: ResponsiveContent(
-                  padding: EdgeInsets.fromLTRB(
-                    config.horizontalPadding,
-                    0,
-                    config.horizontalPadding,
-                    32,
+            catalogAsync.when(
+              loading: () => SliverFillRemaining(
+                child: Center(child: Text(l10n.loadingSongs)),
+              ),
+              error: (_, _) => SliverFillRemaining(
+                child: Center(child: Text(l10n.errorLoadingSongs)),
+              ),
+              data: (_) {
+                if (songs.isEmpty) {
+                  return const SliverFillRemaining(child: _EmptyState());
+                }
+                return SliverToBoxAdapter(
+                  child: ResponsiveContent(
+                    padding: EdgeInsets.fromLTRB(
+                      config.horizontalPadding,
+                      0,
+                      config.horizontalPadding,
+                      32,
+                    ),
+                    child: _SongsGrid(
+                      songs: songs,
+                      query: query,
+                      crossAxisCount: config.gridCrossAxisCount,
+                      childAspectRatio: config.gridChildAspectRatio,
+                    ),
                   ),
-                  child: _SongsGrid(
-                    songs: songs,
-                    query: query,
-                    crossAxisCount: config.gridCrossAxisCount,
-                    childAspectRatio: config.gridChildAspectRatio,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -182,10 +198,7 @@ class _SongsGrid extends StatelessWidget {
       onTap: () => context.pushNamed(
         'song-detail',
         pathParameters: {'id': song.id},
-        extra: {
-          'title': song.title,
-          'number': song.number,
-        },
+        extra: {'title': song.title, 'number': song.number},
       ),
     );
   }
