@@ -1,7 +1,7 @@
 name: fva_songs
 description: "Application de chants et cantiques pour le culte - FVA Songs"
 publish_to: 'none'
-version: 0.1.0
+version: 0.1.1+2
 
 environment:
   sdk: ^3.10.1
