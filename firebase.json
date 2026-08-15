@@ -42,9 +42,22 @@
   "hosting": {
     "public": "hosting",
     "ignore": ["firebase.json", "**/.*"],
-    "headers": [
+    "redirects": [
       {
         "source": "/fva-songs.bin",
+        "destination": "/fva-songs.apk",
+        "type": 301
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/fva-songs.apk",
+        "destination": "/fva-songs.bin"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/fva-songs.apk",
         "headers": [
           { "key": "Content-Type", "value": "application/vnd.android.package-archive" },
           { "key": "Content-Disposition", "value": "attachment; filename=\"fva-songs.apk\"" },
