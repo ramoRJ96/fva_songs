@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:fva_songs/features/songs/domain/entities/song.dart';
+import 'package:fva_songs/features/songs/domain/repositories/song_repository.dart';
 import 'package:fva_songs/features/songs/domain/services/song_filter_service.dart';
 import 'package:fva_songs/features/songs/presentation/providers/songs_providers.dart';
+
+class MockSongRepository extends Mock implements SongRepository {}
 
 Song _song(String id, String number) {
   return Song(
@@ -67,6 +71,21 @@ void main() {
 
     expect(container.read(songByIdProvider('b')), songB);
     expect(container.read(songByIdProvider('inconnu')), isNull);
+  });
+
+  test('songDetailProvider charge le chant complet via getById', () async {
+    final repo = MockSongRepository();
+    when(() => repo.getById('b')).thenAnswer((_) async => songB);
+
+    container = ProviderContainer(
+      overrides: [
+        songRepositoryProvider.overrideWithValue(repo),
+      ],
+    );
+
+    final song = await container.read(songDetailProvider('b').future);
+    expect(song, songB);
+    verify(() => repo.getById('b')).called(1);
   });
 
   test(

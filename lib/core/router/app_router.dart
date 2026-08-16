@@ -88,16 +88,27 @@ class _EditSongRoute extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final song = ref.watch(songByIdProvider(songId));
+    final songAsync = ref.watch(songDetailProvider(songId));
 
-    if (song == null) {
-      return Scaffold(
+    return songAsync.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: Text(l10n.loadingSongs)),
+        body: Center(child: Text(l10n.loadingSongs)),
+      ),
+      error: (_, _) => Scaffold(
         appBar: AppBar(title: Text(l10n.songNotFound)),
-        body: Center(child: Text(l10n.songDoesNotExist)),
-      );
-    }
-
-    return AddSongScreen(editingSong: song);
+        body: Center(child: Text(l10n.errorLoadingSongs)),
+      ),
+      data: (song) {
+        if (song == null) {
+          return Scaffold(
+            appBar: AppBar(title: Text(l10n.songNotFound)),
+            body: Center(child: Text(l10n.songDoesNotExist)),
+          );
+        }
+        return AddSongScreen(editingSong: song);
+      },
+    );
   }
 }
 

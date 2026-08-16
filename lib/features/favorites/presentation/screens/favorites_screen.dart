@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/responsiveness/configs/page_layout_config.dart';
 import '../../../../core/responsiveness/extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -32,64 +33,107 @@ class FavoritesScreen extends ConsumerWidget {
       ),
       body: favoriteSongs.isEmpty
           ? _EmptyFavorites(l10n: l10n)
-          : ResponsiveContent(
-              padding: EdgeInsets.symmetric(
-                horizontal: config.horizontalPadding,
-                vertical: config.verticalPadding,
-              ),
-              child: ListView(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.savedTitles,
-                        style: AppTextStyles.labelCaps(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        l10n.songsCount(favoriteSongs.length),
-                        style: AppTextStyles.labelSm(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (config.gridCrossAxisCount <= 1)
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: favoriteSongs.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) => _favoriteItem(
-                        context,
-                        ref,
-                        favoriteSongs[index],
-                      ),
-                    )
-                  else
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: favoriteSongs.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: config.gridCrossAxisCount,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: config.gridChildAspectRatio,
-                      ),
-                      itemBuilder: (context, index) => _favoriteItem(
-                        context,
-                        ref,
-                        favoriteSongs[index],
-                      ),
+          : CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _contentHorizontalPadding(context, config),
+                      config.verticalPadding,
+                      _contentHorizontalPadding(context, config),
+                      16,
                     ),
-                  const SizedBox(height: 32),
-                ],
-              ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.savedTitles,
+                          style: AppTextStyles.labelCaps(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          l10n.songsCount(favoriteSongs.length),
+                          style: AppTextStyles.labelSm(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                _FavoritesSliverList(
+                  songs: favoriteSongs,
+                  horizontalPadding: _contentHorizontalPadding(context, config),
+                  crossAxisCount: config.gridCrossAxisCount,
+                  childAspectRatio: config.gridChildAspectRatio,
+                ),
+              ],
             ),
+    );
+  }
+}
+
+double _contentHorizontalPadding(
+  BuildContext context,
+  PageLayoutConfig config,
+) {
+  final width = MediaQuery.sizeOf(context).width;
+  final maxWidth = config.maxContentWidth;
+  if (maxWidth.isFinite && width > maxWidth) {
+    return ((width - maxWidth) / 2).clamp(config.horizontalPadding, width);
+  }
+  return config.horizontalPadding;
+}
+
+class _FavoritesSliverList extends ConsumerWidget {
+  const _FavoritesSliverList({
+    required this.songs,
+    required this.horizontalPadding,
+    required this.crossAxisCount,
+    required this.childAspectRatio,
+  });
+
+  final List<Song> songs;
+  final double horizontalPadding;
+  final int crossAxisCount;
+  final double childAspectRatio;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final padding = EdgeInsets.fromLTRB(
+      horizontalPadding,
+      0,
+      horizontalPadding,
+      32,
+    );
+
+    if (crossAxisCount <= 1) {
+      return SliverPadding(
+        padding: padding,
+        sliver: SliverList.separated(
+          itemCount: songs.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) =>
+              _favoriteItem(context, ref, songs[index]),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: padding,
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: childAspectRatio,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => _favoriteItem(context, ref, songs[index]),
+          childCount: songs.length,
+        ),
+      ),
     );
   }
 

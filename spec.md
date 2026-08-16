@@ -1,8 +1,8 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.2  
+**Version du document :** 1.3  
 **Version de l’application :** 0.1.1+2  
-**Date :** 15 août 2026  
+**Date :** 16 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
 Ce document décrit le produit tel qu’il est implémenté. Toute évolution (nouvelle fonctionnalité, changement de schéma Firestore, nouveau rôle, nouvelle convention) doit mettre à jour ce fichier.
@@ -171,11 +171,12 @@ Pas de Play Store, pas de TestFlight, pas de compte utilisateur nominatif pour l
 | Critère | Cible / implémentation |
 | --- | --- |
 | Offline-first | Cache Firestore disque, taille illimitée. Lecture du catalogue depuis le cache si le réseau est absent. |
+| Performance liste | Construction paresseuse des cartes (`SliverList` / `SliverGrid`). Le catalogue en mémoire **n’inclut pas les paroles** ; elles sont chargées à l’ouverture du détail / de l’édition. |
 | Performance recherche | Filtrage 100 % in-memory sur le catalogue déjà chargé. Debounce 200 ms. Champ `searchText` dénormalisé à l’écriture. |
 | Sécurité | Aucune écriture publique sur `songs`. Rules Firestore = source de vérité serveur. L’UI ne fait que refléter le rôle. |
 | i18n | FR + MG pour l’UI. Fallback Material/Cupertino FR pour `mg` (locale non fournie par le SDK). |
 | Responsive | Breakpoints 640 / 768 / 1024 / 1280 / 1536. NavigationBar vs NavigationRail. Largeur max du contenu. |
-| Testabilité | Domain pur + DIP : 119 tests unitaires sans projet Firebase réel. |
+| Testabilité | Domain pur + DIP : 122 tests unitaires sans projet Firebase réel. |
 | Distribution | APK signé, landing Hosting, pas de store. |
 
 ---
@@ -381,8 +382,8 @@ Usage liturgique : on chante le 1er couplet puis le refrain, même si la source 
 
 **`SongRepository`**
 
-- `Stream<List<Song>> watchSongs()`
-- `Future<Song?> getById(String id)`
+- `Stream<List<Song>> watchSongs()` — métadonnées du catalogue (sans `sections`)
+- `Future<Song?> getById(String id)` — chant complet (paroles incluses)
 - `Future<Song> addApprovedSong(Song song)`
 - `Future<void> updateSong(Song song)`
 - `Future<void> deleteSong(String id)`
@@ -433,8 +434,8 @@ updatedAt: string ISO-8601 UTC
 
 Comportement datasource (`SongRemoteDataSource`) :
 
-- `watchSongs` : snapshots de **toute** la collection, filtre client `approved`, tri `number`.
-- `getById` : `null` si absent **ou** non `approved`.
+- `watchSongs` : snapshots de **toute** la collection, filtre client `approved`, tri `number`. Parse **sans** `sections` (`SongModel.fromFirestore(..., includeSections: false)`). La recherche reste possible via `searchText`. Le SDK mobile Firestore **ne projette pas** les champs : le document complet transite encore sur le réseau / cache, mais n’est pas retenu en RAM côté modèle liste.
+- `getById` : chant **complet** (paroles incluses). `null` si absent **ou** non `approved`.
 - `addApprovedSong` : force `status: approved`, calcule `searchText`, `collection.add`.
 - `updateSong` : `set(merge: true)`, force `approved` + `searchText`.
 - `deleteSong` : `doc.delete()` (admin only côté rules).
@@ -480,6 +481,8 @@ Sans `currentUser` → `StateError`.
 - `config/admins` : `{ emails: [string] }`. Comparaison **lower-case trimmed**. Écriture console only.
 
 ### 9.5 Mappers
+
+`SongModel.fromFirestore(id, data, {includeSections = true})` : si `includeSections: false`, `sections` est une liste vide (catalogue).
 
 `SongModel.buildSearchText` concatène titre, numéro, auteur, thème, key, code langue, firstLine, toutes les lignes de sections, puis `TextNormalizer.normalize`.
 
@@ -650,9 +653,11 @@ La recherche **ne interroge pas** Firestore : elle opère sur le snapshot déjà
 | `/admin/login` | `admin-login` | `AdminLoginScreen` | non |
 | `/admin` | `admin-moderation` | `ModerationScreen` | non |
 
-`extra` du détail : `{ title, number }` pour un titre immédiat ; le corps lit le catalogue via `songByIdProvider`.
+`extra` du détail : `{ title, number }` pour un titre immédiat pendant le chargement. Le corps charge le chant **complet** via `songDetailProvider` (`getById`).
 
-`_EditSongRoute` : si le chant n’est pas dans le catalogue chargé → écran « introuvable ».
+`_EditSongRoute` : même provider (les paroles sont indispensables à l’édition). Si le chant est introuvable → écran « introuvable ».
+
+Listes **Chants** et **Favoris** : `CustomScrollView` + `SliverList` / `SliverGrid` (cartes construites uniquement si visibles). Pas de `ListView`/`GridView` en `shrinkWrap`.
 
 ### 14.2 Shell
 
@@ -698,8 +703,9 @@ songFilterServiceProvider  → const SongFilterService()
 
 | Provider | Type | Source |
 | --- | --- | --- |
-| `songsCatalogProvider` | `StreamProvider<List<Song>>` | `watchSongs()` |
-| `songByIdProvider(id)` | `Provider<Song?>` | scan du catalogue |
+| `songsCatalogProvider` | `StreamProvider<List<Song>>` | `watchSongs()` (sans paroles) |
+| `songByIdProvider(id)` | `Provider<Song?>` | scan du catalogue (métadonnées) |
+| `songDetailProvider(id)` | `FutureProvider.autoDispose.family<Song?>` | `getById` (paroles incluses) |
 | `favoriteIdsProvider` | `StreamProvider<Set<String>>` | `watchFavoriteIds()` |
 | `isFavoriteProvider(id)` | `Provider<bool>` | containment |
 | `favoriteSongsProvider` | `Provider<List<Song>>` | intersection |
@@ -784,17 +790,17 @@ Pas de thème sombre livré.
 
 ## 19. Tests
 
-Emplacement : `test/`, miroir de `lib/`. **119** tests unitaires, `flutter analyze` clean.
+Emplacement : `test/`, miroir de `lib/`. **122** tests unitaires, `flutter analyze` clean.
 
 | Zone | Outil | Ce qui est couvert |
 | --- | --- | --- |
 | Entités | pur Dart | enums `fromString`, `copyWith`, `sectionsForDisplay`, `isPending` |
 | Services | pur Dart | accents, scopes, ranking, favoris |
-| Mappers | pur Dart | round-trip Firestore maps, défauts, `buildSearchText` |
-| Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
+| Mappers | pur Dart | round-trip Firestore maps, défauts, `buildSearchText`, `includeSections` |
+| Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved, catalogue sans paroles, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
 | Repositories | `mocktail` | délégation + toggle favori |
 | Contrôleurs | `mocktail` | admin vs non-admin save, firstLine vide, debounce |
-| Providers dérivés | `ProviderContainer` + overrides | intersection favoris, filtre, `songById` |
+| Providers dérivés | `ProviderContainer` + overrides | intersection favoris, filtre, `songById`, `songDetail` |
 | Locale | `SharedPreferences.setMockInitialValues` | persist / toggle / défaut |
 
 Non couvert (volontairement, hors unitaires) : tests de widgets/golden, tests d’intégration Firebase réel, tests iOS/Android natifs.
@@ -867,14 +873,15 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 2. **Pas de garde de route `/admin`** — sécurité réelle = rules.  
 3. **Tri des numéros lexicographique** — `"10"` avant `"2"` en string sort. Les numéros « bis » sont des chaînes.  
 4. **`watchSongs` / `watchPending` sans query Firestore `where`** — filtre en client (évite les index composites, charge tout le cache). OK tant que le catalogue reste de taille hymnaire.  
-5. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
-6. **Clés l10n mortes** — listes de culte / verset du jour.  
-7. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
-8. **iOS non distribué** — besoin compte développeur Apple.  
-9. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
-10. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
-11. **Pas de CI** dans le dépôt au moment de cette spec.  
-12. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
+5. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
+6. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
+7. **Clés l10n mortes** — listes de culte / verset du jour.  
+8. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
+9. **iOS non distribué** — besoin compte développeur Apple.  
+10. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
+11. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
+12. **Pas de CI** dans le dépôt au moment de cette spec.  
+13. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
 
 ---
 
@@ -885,6 +892,7 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 - Comptes fidèles (email / Google) pour survivre à la réinstall des favoris.
 - Listes de culte (clés l10n déjà présentes).
 - Query Firestore `where status == approved` + index, si le volume explose.
+- Pagination du catalogue / collection métadonnées séparée des paroles, pour réduire le trafic réseau.
 - Garde GoRouter `redirect` sur `/admin`.
 - Play Store / TestFlight.
 - Thème sombre.

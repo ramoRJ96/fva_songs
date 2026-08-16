@@ -7,19 +7,24 @@ class SongModel {
 
   final Song song;
 
-  factory SongModel.fromFirestore(String id, Map<String, dynamic> data) {
-    final sectionsData = (data['sections'] as List<dynamic>? ?? const []);
-    final sections = sectionsData.map((raw) {
-      final map = Map<String, dynamic>.from(raw as Map);
-      return LyricSection(
-        type: _sectionTypeFromString(map['type'] as String?),
-        index: map['index'] as int?,
-        lines: (map['lines'] as List<dynamic>? ?? const [])
-            .map((e) => e.toString())
-            .toList(),
-        isBis: map['isBis'] as bool? ?? false,
-      );
-    }).toList();
+  factory SongModel.fromFirestore(
+    String id,
+    Map<String, dynamic> data, {
+    bool includeSections = true,
+  }) {
+    final sections = includeSections
+        ? (data['sections'] as List<dynamic>? ?? const []).map((raw) {
+            final map = Map<String, dynamic>.from(raw as Map);
+            return LyricSection(
+              type: _sectionTypeFromString(map['type'] as String?),
+              index: map['index'] as int?,
+              lines: (map['lines'] as List<dynamic>? ?? const [])
+                  .map((e) => e.toString())
+                  .toList(),
+              isBis: map['isBis'] as bool? ?? false,
+            );
+          }).toList()
+        : const <LyricSection>[];
 
     return SongModel(
       Song(

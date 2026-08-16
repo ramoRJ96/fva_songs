@@ -64,7 +64,7 @@ final songsCatalogProvider = StreamProvider<List<Song>>((ref) {
   return ref.watch(songRepositoryProvider).watchSongs();
 });
 
-/// Lookup d'un chant par id dans le catalogue déjà chargé.
+/// Lookup métadonnées dans le catalogue (sans paroles).
 final songByIdProvider = Provider.family<Song?, String>((ref, id) {
   final catalog = ref.watch(songsCatalogProvider).valueOrNull;
   if (catalog == null) return null;
@@ -72,6 +72,12 @@ final songByIdProvider = Provider.family<Song?, String>((ref, id) {
     if (song.id == id) return song;
   }
   return null;
+});
+
+/// Chant complet (paroles incluses), chargé à la demande (détail / édition).
+final songDetailProvider =
+    FutureProvider.autoDispose.family<Song?, String>((ref, id) {
+  return ref.watch(songRepositoryProvider).getById(id);
 });
 
 // ---------------------------------------------------------------------------

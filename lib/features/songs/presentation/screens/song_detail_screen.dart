@@ -42,76 +42,110 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final song = ref.watch(songByIdProvider(widget.songId));
+    final songAsync = ref.watch(songDetailProvider(widget.songId));
     final isFavorite = ref.watch(isFavoriteProvider(widget.songId));
 
-    if (song == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.songNotFound)),
-        body: Center(child: Text(l10n.songDoesNotExist)),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
+    return songAsync.when(
+      loading: () => Scaffold(
         backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.08),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-          onPressed: () => Navigator.of(context).pop(),
+        appBar: AppBar(
+          title: widget.title.isEmpty
+              ? Text(l10n.loadingSongs)
+              : Column(
+                  children: [
+                    if (widget.number.isNotEmpty)
+                      Text(
+                        'N° ${widget.number}',
+                        style: AppTextStyles.labelSm(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    Text(
+                      widget.title,
+                      style: AppTextStyles.headlineMd(
+                        color: AppColors.primary,
+                      ).copyWith(fontSize: 18),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
         ),
-        title: Column(
-          children: [
-            Text(
-              'N° ${song.number}',
-              style: AppTextStyles.labelSm(color: AppColors.onSurfaceVariant),
+        body: Center(child: Text(l10n.loadingSongs)),
+      ),
+      error: (_, _) => Scaffold(
+        appBar: AppBar(title: Text(l10n.songNotFound)),
+        body: Center(child: Text(l10n.errorLoadingSongs)),
+      ),
+      data: (song) {
+        if (song == null) {
+          return Scaffold(
+            appBar: AppBar(title: Text(l10n.songNotFound)),
+            body: Center(child: Text(l10n.songDoesNotExist)),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.surface,
+          appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            surfaceTintColor: Colors.transparent,
+            elevation: 1,
+            shadowColor: Colors.black.withValues(alpha: 0.08),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            Text(
-              song.title,
-              style: AppTextStyles.headlineMd(
-                color: AppColors.primary,
-              ).copyWith(fontSize: 18),
-              overflow: TextOverflow.ellipsis,
+            title: Column(
+              children: [
+                Text(
+                  'N° ${song.number}',
+                  style: AppTextStyles.labelSm(color: AppColors.onSurfaceVariant),
+                ),
+                Text(
+                  song.title,
+                  style: AppTextStyles.headlineMd(
+                    color: AppColors.primary,
+                  ).copyWith(fontSize: 18),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: l10n.editSong,
-            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-            onPressed: () => context.push('/edit/${song.id}'),
-          ),
-          IconButton(
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: Icon(
-                isFavorite ? Icons.grade : Icons.grade_outlined,
-                key: ValueKey(isFavorite),
-                color: isFavorite
-                    ? AppColors.secondaryContainer
-                    : AppColors.primary,
-                size: 28,
+            centerTitle: true,
+            actions: [
+              IconButton(
+                tooltip: l10n.editSong,
+                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                onPressed: () => context.push('/edit/${song.id}'),
               ),
-            ),
-            onPressed: () {
-              ref
-                  .read(favoritesControllerProvider)
-                  .toggle(song.id, currentlyFavorite: isFavorite);
-            },
+              IconButton(
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: Icon(
+                    isFavorite ? Icons.grade : Icons.grade_outlined,
+                    key: ValueKey(isFavorite),
+                    color: isFavorite
+                        ? AppColors.secondaryContainer
+                        : AppColors.primary,
+                    size: 28,
+                  ),
+                ),
+                onPressed: () {
+                  ref
+                      .read(favoritesControllerProvider)
+                      .toggle(song.id, currentlyFavorite: isFavorite);
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      body: _LyricsBody(song: song, fontSize: _fontSize, l10n: l10n),
-      bottomNavigationBar: LyricsControllerBar(
-        fontSize: _fontSize,
-        onDecrease: () => _changeFontSize(-2),
-        onIncrease: () => _changeFontSize(2),
-        onSanctuaryMode: () => _showSanctuaryModeSnackbar(context, l10n),
-      ),
+          body: _LyricsBody(song: song, fontSize: _fontSize, l10n: l10n),
+          bottomNavigationBar: LyricsControllerBar(
+            fontSize: _fontSize,
+            onDecrease: () => _changeFontSize(-2),
+            onIncrease: () => _changeFontSize(2),
+            onSanctuaryMode: () => _showSanctuaryModeSnackbar(context, l10n),
+          ),
+        );
+      },
     );
   }
 

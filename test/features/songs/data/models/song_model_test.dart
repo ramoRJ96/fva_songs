@@ -85,6 +85,26 @@ void main() {
       });
       expect(model.song.sections.single.type, SectionType.chorus);
     });
+
+    test('includeSections: false ignore les paroles', () {
+      final model = SongModel.fromFirestore(
+        'doc-5',
+        {
+          'title': 'Titre',
+          'sections': [
+            {
+              'type': 'couplet',
+              'index': 1,
+              'lines': ['Ligne A'],
+            },
+          ],
+        },
+        includeSections: false,
+      );
+
+      expect(model.song.title, 'Titre');
+      expect(model.song.sections, isEmpty);
+    });
   });
 
   group('SongModel.toFirestore', () {

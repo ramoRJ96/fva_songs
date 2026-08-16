@@ -9,6 +9,7 @@ Song _song({
   String number = '1',
   String title = 'Titre',
   SongStatus status = SongStatus.approved,
+  List<LyricSection> sections = const [],
 }) {
   return Song(
     id: id,
@@ -19,10 +20,18 @@ Song _song({
     key: '',
     language: SongLanguage.fr,
     firstLine: '',
-    sections: const [],
+    sections: sections,
     status: status,
   );
 }
+
+const _sampleSections = [
+  LyricSection(
+    type: SectionType.couplet,
+    index: 1,
+    lines: ['Première ligne', 'Deuxième ligne'],
+  ),
+];
 
 void main() {
   late FakeFirebaseFirestore firestore;
@@ -55,18 +64,36 @@ void main() {
       expect(songs.map((s) => s.number), ['2', '5']);
       expect(songs.every((s) => s.status == SongStatus.approved), isTrue);
     });
+
+    test('n\'inclut pas les paroles (sections vides)', () async {
+      await firestore.collection('songs').add(
+            SongModel(
+              _song(title: 'Avec paroles', sections: _sampleSections),
+            ).toFirestore(),
+          );
+
+      final songs = await dataSource.watchSongs().first;
+
+      expect(songs, hasLength(1));
+      expect(songs.single.title, 'Avec paroles');
+      expect(songs.single.sections, isEmpty);
+    });
   });
 
   group('getById', () {
-    test('renvoie le chant si approuvé', () async {
-      final ref = await firestore
-          .collection('songs')
-          .add(SongModel(_song(title: 'Approuvé')).toFirestore());
+    test('renvoie le chant si approuvé, paroles incluses', () async {
+      final ref = await firestore.collection('songs').add(
+            SongModel(
+              _song(title: 'Approuvé', sections: _sampleSections),
+            ).toFirestore(),
+          );
 
       final song = await dataSource.getById(ref.id);
 
       expect(song, isNotNull);
       expect(song!.title, 'Approuvé');
+      expect(song.sections, hasLength(1));
+      expect(song.sections.single.lines, ['Première ligne', 'Deuxième ligne']);
     });
 
     test('renvoie null si le chant est en attente', () async {

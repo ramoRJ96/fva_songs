@@ -15,11 +15,19 @@ class SongRemoteDataSource {
   CollectionReference<Map<String, dynamic>> get _songs =>
       _firestore.collection('songs');
 
-  /// Catalogue public : uniquement les chants approuvés (status absent = approuvé).
+  /// Catalogue public : chants approuvés, **sans paroles** (lazy : le détail
+  /// charge les sections via [getById]). La recherche reste possible via
+  /// `searchText`.
   Stream<List<Song>> watchSongs() {
     return _songs.snapshots().map((snapshot) {
       final songs = snapshot.docs
-          .map((doc) => SongModel.fromFirestore(doc.id, doc.data()).song)
+          .map(
+            (doc) => SongModel.fromFirestore(
+              doc.id,
+              doc.data(),
+              includeSections: false,
+            ).song,
+          )
           .where((song) => song.status == SongStatus.approved)
           .toList()
         ..sort((a, b) => a.number.compareTo(b.number));

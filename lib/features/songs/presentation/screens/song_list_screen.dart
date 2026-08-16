@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/locale_controller.dart';
+import '../../../../core/responsiveness/configs/page_layout_config.dart';
 import '../../../../core/responsiveness/extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -127,21 +128,15 @@ class SongListScreen extends ConsumerWidget {
                 if (songs.isEmpty) {
                   return const SliverFillRemaining(child: _EmptyState());
                 }
-                return SliverToBoxAdapter(
-                  child: ResponsiveContent(
-                    padding: EdgeInsets.fromLTRB(
-                      config.horizontalPadding,
-                      0,
-                      config.horizontalPadding,
-                      32,
-                    ),
-                    child: _SongsGrid(
-                      songs: songs,
-                      query: query,
-                      crossAxisCount: config.gridCrossAxisCount,
-                      childAspectRatio: config.gridChildAspectRatio,
-                    ),
+                return _SongsSliverList(
+                  songs: songs,
+                  query: query,
+                  horizontalPadding: _contentHorizontalPadding(
+                    context,
+                    config,
                   ),
+                  crossAxisCount: config.gridCrossAxisCount,
+                  childAspectRatio: config.gridChildAspectRatio,
                 );
               },
             ),
@@ -152,42 +147,68 @@ class SongListScreen extends ConsumerWidget {
   }
 }
 
-class _SongsGrid extends StatelessWidget {
-  const _SongsGrid({
+double _contentHorizontalPadding(
+  BuildContext context,
+  PageLayoutConfig config,
+) {
+  final width = MediaQuery.sizeOf(context).width;
+  final maxWidth = config.maxContentWidth;
+  if (maxWidth.isFinite && width > maxWidth) {
+    return ((width - maxWidth) / 2).clamp(config.horizontalPadding, width);
+  }
+  return config.horizontalPadding;
+}
+
+/// Liste / grille à construction paresseuse (uniquement les cartes visibles).
+class _SongsSliverList extends StatelessWidget {
+  const _SongsSliverList({
     required this.songs,
     required this.query,
+    required this.horizontalPadding,
     required this.crossAxisCount,
     required this.childAspectRatio,
   });
 
   final List<Song> songs;
   final String query;
+  final double horizontalPadding;
   final int crossAxisCount;
   final double childAspectRatio;
 
   @override
   Widget build(BuildContext context) {
+    final padding = EdgeInsets.fromLTRB(
+      horizontalPadding,
+      0,
+      horizontalPadding,
+      32,
+    );
+
     if (crossAxisCount <= 1) {
-      return ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: songs.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _songCard(context, songs[index]),
+      return SliverPadding(
+        padding: padding,
+        sliver: SliverList.separated(
+          itemCount: songs.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => _songCard(context, songs[index]),
+        ),
       );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: songs.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: childAspectRatio,
+    return SliverPadding(
+      padding: padding,
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: childAspectRatio,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => _songCard(context, songs[index]),
+          childCount: songs.length,
+        ),
       ),
-      itemBuilder: (context, index) => _songCard(context, songs[index]),
     );
   }
 
