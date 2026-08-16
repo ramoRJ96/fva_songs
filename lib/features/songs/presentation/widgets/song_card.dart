@@ -88,7 +88,7 @@ class SongCard extends StatelessWidget {
                     style: AppTextStyles.labelCaps(color: AppColors.outline),
                   ),
                   const SizedBox(width: 8),
-                  _Dot(),
+                  const _Dot(),
                   const SizedBox(width: 8),
                 ],
                 if (song.key.isNotEmpty) ...[
@@ -97,7 +97,7 @@ class SongCard extends StatelessWidget {
                     style: AppTextStyles.labelCaps(color: AppColors.outline),
                   ),
                   const SizedBox(width: 8),
-                  _Dot(),
+                  const _Dot(),
                   const SizedBox(width: 8),
                 ],
                 Text(
@@ -114,6 +114,7 @@ class SongCard extends StatelessWidget {
 }
 
 class _Dot extends StatelessWidget {
+  const _Dot();
   @override
   Widget build(BuildContext context) {
     return Container(

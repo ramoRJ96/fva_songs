@@ -66,6 +66,7 @@ void main() {
         favoriteIds: const {},
       );
       expect(result, songs);
+      expect(identical(result, songs), isTrue);
     });
 
     test('scope favoris sans texte ne renvoie que les favoris', () {

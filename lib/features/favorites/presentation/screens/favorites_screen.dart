@@ -139,6 +139,7 @@ class _FavoritesSliverList extends ConsumerWidget {
 
   Widget _favoriteItem(BuildContext context, WidgetRef ref, Song song) {
     return FavoriteSongItem(
+      key: ValueKey(song.id),
       song: song,
       onTap: () => context.pushNamed(
         'song-detail',

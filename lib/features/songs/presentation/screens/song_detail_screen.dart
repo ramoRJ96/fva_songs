@@ -178,19 +178,23 @@ class _LyricsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = context.pageConfig;
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        config.horizontalPadding,
-        24,
-        config.horizontalPadding,
-        120,
-      ),
-      child: ResponsiveContent(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (song.author.isNotEmpty || song.key.isNotEmpty) ...[
-              Wrap(
+    final sections = song.sectionsForDisplay;
+    final hasMeta = song.author.isNotEmpty || song.key.isNotEmpty;
+
+    return ResponsiveContent(
+      child: ListView.builder(
+        padding: EdgeInsets.fromLTRB(
+          config.horizontalPadding,
+          24,
+          config.horizontalPadding,
+          120,
+        ),
+        itemCount: sections.length + (hasMeta ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (hasMeta && index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Wrap(
                 spacing: 12,
                 runSpacing: 8,
                 children: [
@@ -210,14 +214,15 @@ class _LyricsBody extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 24),
-            ],
-            for (final section in song.sectionsForDisplay) ...[
-              LyricsSection(section: section, fontSize: fontSize),
-              const SizedBox(height: 32),
-            ],
-          ],
-        ),
+            );
+          }
+
+          final section = sections[hasMeta ? index - 1 : index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 32),
+            child: LyricsSection(section: section, fontSize: fontSize),
+          );
+        },
       ),
     );
   }
