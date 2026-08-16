@@ -75,8 +75,22 @@ final songByIdProvider = Provider.family<Song?, String>((ref, id) {
 });
 
 /// Chant complet (paroles incluses), chargé à la demande (détail / édition).
+///
+/// `autoDispose` + keepAlive court : un aller-retour détail ne refetch pas,
+/// mais la RAM est libérée ~2 min après la dernière écoute.
 final songDetailProvider =
     FutureProvider.autoDispose.family<Song?, String>((ref, id) {
+  final link = ref.keepAlive();
+  Timer? disposeTimer;
+  ref.onCancel(() {
+    disposeTimer?.cancel();
+    disposeTimer = Timer(const Duration(minutes: 2), link.close);
+  });
+  ref.onResume(() {
+    disposeTimer?.cancel();
+    disposeTimer = null;
+  });
+  ref.onDispose(() => disposeTimer?.cancel());
   return ref.watch(songRepositoryProvider).getById(id);
 });
 

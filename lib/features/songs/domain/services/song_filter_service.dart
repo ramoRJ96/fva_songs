@@ -41,7 +41,8 @@ class SongFilterService {
     }
 
     if (normalizedQuery.isEmpty) {
-      return candidates.toList();
+      // Même instance → Riverpod ne notifie pas la liste sans besoin.
+      return songs;
     }
 
     final scored = <_ScoredSong>[];

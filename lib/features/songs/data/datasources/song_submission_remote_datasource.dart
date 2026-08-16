@@ -25,10 +25,15 @@ class SongSubmissionRemoteDataSource {
       _firestore.collection('song_submissions');
 
   Stream<List<SongSubmission>> watchPending() {
-    return _submissions.snapshots().map((snapshot) {
+    return _submissions
+        .where('status', isEqualTo: SubmissionStatus.pending.name)
+        .snapshots()
+        .map((snapshot) {
       final list = snapshot.docs
-          .map((doc) => SongSubmissionModel.fromFirestore(doc.id, doc.data()).submission)
-          .where((s) => s.status == SubmissionStatus.pending)
+          .map(
+            (doc) =>
+                SongSubmissionModel.fromFirestore(doc.id, doc.data()).submission,
+          )
           .toList()
         ..sort((a, b) {
           final aAt = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);

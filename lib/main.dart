@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/firebase/firebase_bootstrap.dart';
@@ -14,6 +15,9 @@ import 'l10n/app_localizations.dart';
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  // Inter est embarqué dans `google_fonts/` : pas de fetch réseau au 1er frame.
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   try {
     // Offline-first : Firebase + auth anonyme + cache Firestore.

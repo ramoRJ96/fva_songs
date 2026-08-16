@@ -20,12 +20,6 @@ class SongListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final config = context.pageConfig;
-    final catalogAsync = ref.watch(songsCatalogProvider);
-    final songs = ref.watch(filteredSongsProvider);
-    final query = ref.watch(searchQueryProvider);
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: RefreshIndicator(
@@ -35,114 +29,143 @@ class SongListScreen extends ConsumerWidget {
           try {
             await ref.read(songsCatalogProvider.future);
           } catch (_) {
-            // L'état d'erreur est déjà géré par catalogAsync.when ci-dessous.
+            // L'état d'erreur est déjà géré par _SongsResults.
           }
         },
         child: CustomScrollView(
+          cacheExtent: 480,
           physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              backgroundColor: AppColors.surface,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              shadowColor: Colors.black.withValues(alpha: 0.08),
-              forceElevated: true,
-              title: Text(
-                l10n.appTitle,
-                style: AppTextStyles.headlineLgMobile(color: AppColors.primary),
-              ),
-              centerTitle: true,
-              actions: [
-                IconButton(
-                  tooltip: l10n.switchLanguage,
-                  icon: Text(
-                    ref
-                        .watch(localeControllerProvider)
-                        .languageCode
-                        .toUpperCase(),
-                    style: AppTextStyles.labelSm(
-                      color: AppColors.primary,
-                    ).copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  onPressed: () =>
-                      ref.read(localeControllerProvider.notifier).toggle(),
-                ),
-                IconButton(
-                  tooltip: l10n.adminAccess,
-                  icon: const Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: AppColors.primary,
-                  ),
-                  onPressed: () {
-                    final isAdmin =
-                        ref.read(isAdminProvider).valueOrNull ?? false;
-                    context.push(isAdmin ? '/admin' : '/admin/login');
-                  },
-                ),
-              ],
-            ),
-            SliverToBoxAdapter(
-              child: ResponsiveContent(
-                padding: EdgeInsets.symmetric(
-                  horizontal: config.horizontalPadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: config.verticalPadding),
-                    const SearchBarWidget(),
-                    const SizedBox(height: 12),
-                    const FilterChipsRow(),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          l10n.allSongs,
-                          style: AppTextStyles.headlineMd(
-                            color: AppColors.onSurface,
-                          ),
-                        ),
-                        Text(
-                          l10n.resultsCount(songs.length),
-                          style: AppTextStyles.labelSm(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            ),
-            catalogAsync.when(
-              loading: () => SliverFillRemaining(
-                child: Center(child: Text(l10n.loadingSongs)),
-              ),
-              error: (_, _) => SliverFillRemaining(
-                child: Center(child: Text(l10n.errorLoadingSongs)),
-              ),
-              data: (_) {
-                if (songs.isEmpty) {
-                  return const SliverFillRemaining(child: _EmptyState());
-                }
-                return _SongsSliverList(
-                  songs: songs,
-                  query: query,
-                  horizontalPadding: _contentHorizontalPadding(
-                    context,
-                    config,
-                  ),
-                  crossAxisCount: config.gridCrossAxisCount,
-                  childAspectRatio: config.gridChildAspectRatio,
-                );
-              },
-            ),
+          slivers: const [
+            _SongsAppBar(),
+            _SongsHeader(),
+            _SongsResults(),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SongsAppBar extends ConsumerWidget {
+  const _SongsAppBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
+    return SliverAppBar(
+      pinned: true,
+      backgroundColor: AppColors.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      forceElevated: true,
+      title: Text(
+        l10n.appTitle,
+        style: AppTextStyles.headlineLgMobile(color: AppColors.primary),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          tooltip: l10n.switchLanguage,
+          icon: Text(
+            ref.watch(localeControllerProvider).languageCode.toUpperCase(),
+            style: AppTextStyles.labelSm(
+              color: AppColors.primary,
+            ).copyWith(fontWeight: FontWeight.w700),
+          ),
+          onPressed: () => ref.read(localeControllerProvider.notifier).toggle(),
+        ),
+        IconButton(
+          tooltip: l10n.adminAccess,
+          icon: const Icon(
+            Icons.admin_panel_settings_outlined,
+            color: AppColors.primary,
+          ),
+          onPressed: () {
+            final isAdmin = ref.read(isAdminProvider).valueOrNull ?? false;
+            context.push(isAdmin ? '/admin' : '/admin/login');
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _SongsHeader extends ConsumerWidget {
+  const _SongsHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final config = context.pageConfig;
+    final resultCount =
+        ref.watch(filteredSongsProvider.select((songs) => songs.length));
+
+    return SliverToBoxAdapter(
+      child: ResponsiveContent(
+        padding: EdgeInsets.symmetric(horizontal: config.horizontalPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: config.verticalPadding),
+            const SearchBarWidget(),
+            const SizedBox(height: 12),
+            const FilterChipsRow(),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.allSongs,
+                  style: AppTextStyles.headlineMd(color: AppColors.onSurface),
+                ),
+                Text(
+                  l10n.resultsCount(resultCount),
+                  style: AppTextStyles.labelSm(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SongsResults extends ConsumerWidget {
+  const _SongsResults();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final config = context.pageConfig;
+    final catalogAsync = ref.watch(songsCatalogProvider);
+    final songs = ref.watch(filteredSongsProvider);
+    final query = ref.watch(searchQueryProvider);
+
+    return catalogAsync.when(
+      loading: () => SliverFillRemaining(
+        child: Center(child: Text(l10n.loadingSongs)),
+      ),
+      error: (_, _) => SliverFillRemaining(
+        child: Center(child: Text(l10n.errorLoadingSongs)),
+      ),
+      data: (_) {
+        if (songs.isEmpty) {
+          return const SliverFillRemaining(child: _EmptyState());
+        }
+        return _SongsSliverList(
+          songs: songs,
+          query: query,
+          horizontalPadding: _contentHorizontalPadding(context, config),
+          crossAxisCount: config.gridCrossAxisCount,
+          childAspectRatio: config.gridChildAspectRatio,
+        );
+      },
     );
   }
 }
@@ -174,6 +197,14 @@ class _SongsSliverList extends StatelessWidget {
   final double horizontalPadding;
   final int crossAxisCount;
   final double childAspectRatio;
+
+  int? _indexOfKey(Key key) {
+    if (key is ValueKey<String>) {
+      final index = songs.indexWhere((s) => s.id == key.value);
+      return index >= 0 ? index : null;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -207,6 +238,7 @@ class _SongsSliverList extends StatelessWidget {
         delegate: SliverChildBuilderDelegate(
           (context, index) => _songCard(context, songs[index]),
           childCount: songs.length,
+          findChildIndexCallback: _indexOfKey,
         ),
       ),
     );
@@ -214,6 +246,7 @@ class _SongsSliverList extends StatelessWidget {
 
   Widget _songCard(BuildContext context, Song song) {
     return SongCard(
+      key: ValueKey(song.id),
       song: song,
       highlightQuery: query,
       onTap: () => context.pushNamed(

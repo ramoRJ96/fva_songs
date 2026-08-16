@@ -18,8 +18,14 @@ class SongRemoteDataSource {
   /// Catalogue public : chants approuvés, **sans paroles** (lazy : le détail
   /// charge les sections via [getById]). La recherche reste possible via
   /// `searchText`.
+  ///
+  /// Filtre Firestore `status == approved` (index champ unique, pas d'index
+  /// composite). Le tri `number` reste côté client.
   Stream<List<Song>> watchSongs() {
-    return _songs.snapshots().map((snapshot) {
+    return _songs
+        .where('status', isEqualTo: SongStatus.approved.name)
+        .snapshots()
+        .map((snapshot) {
       final songs = snapshot.docs
           .map(
             (doc) => SongModel.fromFirestore(
@@ -28,19 +34,32 @@ class SongRemoteDataSource {
               includeSections: false,
             ).song,
           )
-          .where((song) => song.status == SongStatus.approved)
           .toList()
         ..sort((a, b) => a.number.compareTo(b.number));
       return songs;
     });
   }
 
+  /// Chant complet. Lecture **cache d'abord** (le snapshot catalogue a déjà
+  /// peuplé le cache disque, paroles comprises), puis réseau si besoin.
   Future<Song?> getById(String id) async {
-    final doc = await _songs.doc(id).get();
+    final doc = await _getPreferCache(_songs.doc(id));
     if (!doc.exists || doc.data() == null) return null;
     final song = SongModel.fromFirestore(doc.id, doc.data()!).song;
     if (song.status != SongStatus.approved) return null;
     return song;
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> _getPreferCache(
+    DocumentReference<Map<String, dynamic>> docRef,
+  ) async {
+    try {
+      final cached = await docRef.get(const GetOptions(source: Source.cache));
+      if (cached.exists) return cached;
+    } catch (_) {
+      // Cache vide, fake Firestore, ou indisponible → get() standard.
+    }
+    return docRef.get();
   }
 
   /// Publication directe (admin) — chant visible immédiatement.

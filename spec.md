@@ -1,6 +1,6 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.3  
+**Version du document :** 1.4  
 **Version de l’application :** 0.1.1+2  
 **Date :** 16 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
@@ -171,8 +171,10 @@ Pas de Play Store, pas de TestFlight, pas de compte utilisateur nominatif pour l
 | Critère | Cible / implémentation |
 | --- | --- |
 | Offline-first | Cache Firestore disque, taille illimitée. Lecture du catalogue depuis le cache si le réseau est absent. |
-| Performance liste | Construction paresseuse des cartes (`SliverList` / `SliverGrid`). Le catalogue en mémoire **n’inclut pas les paroles** ; elles sont chargées à l’ouverture du détail / de l’édition. |
-| Performance recherche | Filtrage 100 % in-memory sur le catalogue déjà chargé. Debounce 200 ms. Champ `searchText` dénormalisé à l’écriture. |
+| Performance liste | Construction paresseuse (`SliverList` / `SliverGrid`, `ValueKey`, `cacheExtent` 480). Rebuilds isolés (AppBar / compteur / résultats). Catalogue en mémoire **sans paroles**. |
+| Performance détail | `getById` lit le **cache Firestore d’abord** (le snapshot catalogue a déjà le document complet). `songDetailProvider` keepAlive 2 min. Paroles en `ListView.builder`. |
+| Performance recherche | Filtrage 100 % in-memory. Debounce 200 ms. Query vide + scope ≠ favoris → même instance de liste (pas de rebuild inutile). |
+| Performance 1er frame | Inter **embarqué** (`google_fonts/*.ttf`) ; `GoogleFonts.config.allowRuntimeFetching = false`. |
 | Sécurité | Aucune écriture publique sur `songs`. Rules Firestore = source de vérité serveur. L’UI ne fait que refléter le rôle. |
 | i18n | FR + MG pour l’UI. Fallback Material/Cupertino FR pour `mg` (locale non fournie par le SDK). |
 | Responsive | Breakpoints 640 / 768 / 1024 / 1280 / 1536. NavigationBar vs NavigationRail. Largeur max du contenu. |
@@ -192,7 +194,7 @@ Pas de Play Store, pas de TestFlight, pas de compte utilisateur nominatif pour l
 | Auth | `firebase_auth` | Anonyme + Email/Password |
 | Données | `cloud_firestore` | Persistence native mobile |
 | Préférences | `shared_preferences` | Locale UI uniquement |
-| Typo | `google_fonts` | Inter |
+| Typo | `google_fonts` | Inter **embarqué** (Regular / Italic / Medium / MediumItalic / SemiBold / Bold + OFL). Pas de fetch réseau. |
 | Splash / icônes | `flutter_native_splash`, `flutter_launcher_icons` | Asset `assets/branding/app_icon.png` |
 | Tests | `flutter_test`, `mocktail`, `fake_cloud_firestore`, `firebase_auth_mocks` | Voir §19 |
 
@@ -434,8 +436,8 @@ updatedAt: string ISO-8601 UTC
 
 Comportement datasource (`SongRemoteDataSource`) :
 
-- `watchSongs` : snapshots de **toute** la collection, filtre client `approved`, tri `number`. Parse **sans** `sections` (`SongModel.fromFirestore(..., includeSections: false)`). La recherche reste possible via `searchText`. Le SDK mobile Firestore **ne projette pas** les champs : le document complet transite encore sur le réseau / cache, mais n’est pas retenu en RAM côté modèle liste.
-- `getById` : chant **complet** (paroles incluses). `null` si absent **ou** non `approved`.
+- `watchSongs` : query Firestore `where status == approved` (index champ unique), tri client `number`. Parse **sans** `sections` (`includeSections: false`). Documents **sans** champ `status` ne matchent pas la query (toutes les écritures actuelles posent `status`). La recherche reste possible via `searchText`. Le SDK mobile **ne projette pas** les champs : le document complet transite encore, mais n’est pas retenu en RAM côté modèle liste.
+- `getById` : chant **complet**. Lecture **cache d’abord** (`GetOptions(source: cache)`), puis `get()` réseau / SDK si miss. `null` si absent **ou** non `approved`.
 - `addApprovedSong` : force `status: approved`, calcule `searchText`, `collection.add`.
 - `updateSong` : `set(merge: true)`, force `approved` + `searchText`.
 - `deleteSong` : `doc.delete()` (admin only côté rules).
@@ -454,7 +456,7 @@ createdAt: string ISO-8601 UTC
 reviewedAt: string ISO-8601 UTC   # posé au approve/reject (merge)
 ```
 
-`watchPending` : snapshots collection entière, filtre `pending`, tri `createdAt` desc (les `createdAt` nulls en dernier via epoch 0).
+`watchPending` : query Firestore `where status == pending`, tri `createdAt` desc (les `createdAt` nulls en dernier via epoch 0).
 
 `submitCreate` / `submitUpdate` : exigent `currentUser.uid`, sinon `StateError`. Recalculent `searchText` du payload.
 
@@ -611,7 +613,7 @@ Entrées : liste de chants, query, scope, `Set<String> favoriteIds`.
 1. Normaliser la query.  
 2. Scope `favorites` **et** query vide → uniquement les favoris, **sans** re-score.  
 3. Scope `favorites` **et** query non vide → restreindre d’abord aux favoris, puis scorer.  
-4. Query vide (autre scope) → liste des candidats telle quelle (ordre catalogue).  
+4. Query vide (autre scope) → **la même instance** que la liste catalogue (ordre inchangé, pas de copie).  
 5. Sinon scorer chaque candidat ; garder score > 0 ; trier par score **décroissant**.
 
 ### 13.4 Scoring
@@ -657,7 +659,9 @@ La recherche **ne interroge pas** Firestore : elle opère sur le snapshot déjà
 
 `_EditSongRoute` : même provider (les paroles sont indispensables à l’édition). Si le chant est introuvable → écran « introuvable ».
 
-Listes **Chants** et **Favoris** : `CustomScrollView` + `SliverList` / `SliverGrid` (cartes construites uniquement si visibles). Pas de `ListView`/`GridView` en `shrinkWrap`.
+Listes **Chants** et **Favoris** : `CustomScrollView` + `SliverList` / `SliverGrid` (cartes visibles seulement, `ValueKey(song.id)`). L’écran liste isole AppBar / en-tête / résultats pour limiter les rebuilds. Pas de `ListView`/`GridView` en `shrinkWrap`.
+
+Détail : paroles via `ListView.builder` (`sectionsForDisplay`).
 
 ### 14.2 Shell
 
@@ -705,7 +709,7 @@ songFilterServiceProvider  → const SongFilterService()
 | --- | --- | --- |
 | `songsCatalogProvider` | `StreamProvider<List<Song>>` | `watchSongs()` (sans paroles) |
 | `songByIdProvider(id)` | `Provider<Song?>` | scan du catalogue (métadonnées) |
-| `songDetailProvider(id)` | `FutureProvider.autoDispose.family<Song?>` | `getById` (paroles incluses) |
+| `songDetailProvider(id)` | `FutureProvider.autoDispose.family<Song?>` | `getById` ; keepAlive 2 min après la dernière écoute |
 | `favoriteIdsProvider` | `StreamProvider<Set<String>>` | `watchFavoriteIds()` |
 | `isFavoriteProvider(id)` | `Provider<bool>` | containment |
 | `favoriteSongsProvider` | `Provider<List<Song>>` | intersection |
@@ -732,10 +736,11 @@ songFilterServiceProvider  → const SongFilterService()
 
 1. Persistence Firestore native Android/iOS, cache illimité.  
 2. `watchSongs` émet d’abord le cache puis les mises à jour réseau.  
-3. L’UI (`catalogAsync.when`) gère loading / error / data. En cas d’erreur réseau après un cache valide, Riverpod peut conserver la dernière data selon le cycle de vie du provider.  
-4. Pull-to-refresh force un nouvel abonnement / relecture.  
-5. Les **écritures** (favori, soumission) nécessitent typiquement le réseau ; en offline elles restent en file d’attente Firestore jusqu’à reconnexion (comportement SDK), sous réserve des rules une fois synchronisées.  
-6. Auth anonyme : le `uid` est persisté par le SDK Auth sur l’appareil → favoris stables tant que l’app n’est pas réinstallée / données effacées.
+3. `getById` lit d’abord le cache (documents déjà reçus par le snapshot), donc le détail est immédiat après un catalogue chargé.  
+4. L’UI (`catalogAsync.when`) gère loading / error / data. En cas d’erreur réseau après un cache valide, Riverpod peut conserver la dernière data selon le cycle de vie du provider.  
+5. Pull-to-refresh force un nouvel abonnement / relecture.  
+6. Les **écritures** (favori, soumission) nécessitent typiquement le réseau ; en offline elles restent en file d’attente Firestore jusqu’à reconnexion (comportement SDK), sous réserve des rules une fois synchronisées.  
+7. Auth anonyme : le `uid` est persisté par le SDK Auth sur l’appareil → favoris stables tant que l’app n’est pas réinstallée / données effacées.
 
 Pas de mode « pack de chants embarqué dans l’APK » : le premier lancement **avec** réseau est nécessaire pour peupler le cache. Ensuite, lecture offline.
 
@@ -763,7 +768,7 @@ Le contenu des chants n’est **pas** traduit par l10n : il est stocké dans sa 
 - On-surface : `#1B1C1C`
 
 Material 3, `ColorScheme` complet dans `AppColors` / `AppTheme.lightTheme`.  
-Typo : **Inter** (Google Fonts). Styles métier centralisés dans `AppTextStyles` (lyrics 22/500, label caps, headlines…).
+Typo : **Inter** embarqué dans `google_fonts/` (SIL OFL, `OFL.txt`). `GoogleFonts.config.allowRuntimeFetching = false` au démarrage. Styles métier dans `AppTextStyles` (lyrics 22/500, label caps, headlines…).
 
 Pas de thème sombre livré.
 
@@ -797,7 +802,7 @@ Emplacement : `test/`, miroir de `lib/`. **122** tests unitaires, `flutter analy
 | Entités | pur Dart | enums `fromString`, `copyWith`, `sectionsForDisplay`, `isPending` |
 | Services | pur Dart | accents, scopes, ranking, favoris |
 | Mappers | pur Dart | round-trip Firestore maps, défauts, `buildSearchText`, `includeSections` |
-| Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved, catalogue sans paroles, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
+| Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved (query `where`), catalogue sans paroles, cache-first `getById`, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
 | Repositories | `mocktail` | délégation + toggle favori |
 | Contrôleurs | `mocktail` | admin vs non-admin save, firstLine vide, debounce |
 | Providers dérivés | `ProviderContainer` + overrides | intersection favoris, filtre, `songById`, `songDetail` |
@@ -872,7 +877,7 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 1. **Favoris liés à l’anonyme** — perte à la réinstallation ; logout admin recrée un uid.  
 2. **Pas de garde de route `/admin`** — sécurité réelle = rules.  
 3. **Tri des numéros lexicographique** — `"10"` avant `"2"` en string sort. Les numéros « bis » sont des chaînes.  
-4. **`watchSongs` / `watchPending` sans query Firestore `where`** — filtre en client (évite les index composites, charge tout le cache). OK tant que le catalogue reste de taille hymnaire.  
+4. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
 5. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
 6. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
 7. **Clés l10n mortes** — listes de culte / verset du jour.  
@@ -891,7 +896,6 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 
 - Comptes fidèles (email / Google) pour survivre à la réinstall des favoris.
 - Listes de culte (clés l10n déjà présentes).
-- Query Firestore `where status == approved` + index, si le volume explose.
 - Pagination du catalogue / collection métadonnées séparée des paroles, pour réduire le trafic réseau.
 - Garde GoRouter `redirect` sur `/admin`.
 - Play Store / TestFlight.
