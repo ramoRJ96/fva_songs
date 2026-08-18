@@ -86,6 +86,7 @@
   "loadingSongs": "Chargement des chants...",
   "errorLoadingSongs": "Impossible de charger les chants.",
   "sanctuaryModeSoon": "Mode projection — bientôt disponible",
+  "screenStayOnActive": "L'écran reste allumé pendant l'affichage des paroles.",
   "projectionMode": "Projection",
   "authorLabel": "Auteur",
   "keyLabel": "Tonalité",
@@ -106,5 +107,11 @@
   "moderationTypeCreate": "Nouvel ajout",
   "moderationTypeUpdate": "Modification",
   "moderationApprove": "Approuver",
-  "moderationReject": "Refuser"
+  "moderationReject": "Refuser",
+  "mySubmissionsTitle": "Mes propositions",
+  "mySubmissionsEmptyTitle": "Aucune proposition",
+  "mySubmissionsEmptySubtitle": "Vos ajouts et modifications soumis apparaîtront ici.",
+  "submissionStatusPending": "En attente",
+  "submissionStatusApproved": "Approuvée",
+  "submissionStatusRejected": "Refusée"
 }

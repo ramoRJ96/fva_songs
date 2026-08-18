@@ -1,8 +1,8 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.4  
-**Version de l’application :** 0.1.1+2  
-**Date :** 16 août 2026  
+**Version du document :** 1.6  
+**Version de l’application :** 0.1.2+3  
+**Date :** 18 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
 Ce document décrit le produit tel qu’il est implémenté. Toute évolution (nouvelle fonctionnalité, changement de schéma Firestore, nouveau rôle, nouvelle convention) doit mettre à jour ce fichier.
@@ -37,6 +37,7 @@ Les agents IA **lisent ce fichier avant toute modification** et le tiennent à j
 21. [Import du catalogue](#21-import-du-catalogue)
 22. [Contraintes, limites et dettes connues](#22-contraintes-limites-et-dettes-connues)
 23. [Évolutions envisagées](#23-évolutions-envisagées)
+24. [Analytics (GA4)](#24-analytics-ga4)
 
 ---
 
@@ -94,7 +95,7 @@ Règles importantes :
 ### 3.1 Catalogue
 
 - Affichage de tous les chants dont `status == approved`.
-- Tri par `number` (ordre lexicographique de la chaîne, ex. `"1"`, `"10"`, `"28 bis"`).
+- Tri par `number` via `SongNumberComparator` (ordre naturel : `2` avant `10`, `28` avant `28 bis`).
 - Carte de chant : numéro, titre, première ligne, tonalité.
 - Pull-to-refresh : invalide `songsCatalogProvider` et relit Firestore (cache + réseau).
 - Grille responsive (1 / 2 / 3 colonnes selon la largeur).
@@ -113,6 +114,7 @@ Règles importantes :
 - Métadonnées (auteur, thème, tonalité, langue).
 - Paroles via `song.sectionsForDisplay` (refrain/chorus après le 1er couplet).
 - Contrôle de taille de police : 14–36 px, pas de ±2, défaut 22.
+- **Wake lock** (`wakelock_plus`) : l’écran reste allumé tant que l’écran détail est ouvert (culte / lecture des paroles). Désactivé au `dispose`.
 - État vide si l’id n’existe pas dans le catalogue chargé.
 
 ### 3.4 Favoris
@@ -139,8 +141,17 @@ Résultat :
 - Admin → `SongSaveOutcome.published` (écriture directe `songs`).
 - Non-admin → `SongSaveOutcome.pendingReview` (document `song_submissions`).
 - Modale de succès avec texte adapté (publié vs en attente de validation).
+- Icône **historique** dans l’AppBar (mode création) → `/submissions` : liste des propositions de l’utilisateur courant (tous statuts).
 
-### 3.6 Administration
+### 3.6 Mes propositions
+
+- Route `/submissions` (`MySubmissionsScreen`).
+- Stream Firestore `song_submissions` filtré `createdBy == uid` (rules : lecture autorisée pour l’auteur).
+- Affichage : type (create/update), statut (pending / approved / rejected), titre, numéro, firstLine, date.
+- Tri client `createdAt` desc (plus récentes en premier).
+- Vide : message d’incitation.
+
+### 3.7 Administration
 
 - Icône bouclier dans l’AppBar de la liste.
 - Si déjà admin → `/admin`, sinon `/admin/login`.
@@ -152,13 +163,13 @@ Résultat :
   - actions Approuver / Rejeter ;
   - bouton déconnexion.
 
-### 3.7 Langue de l’UI
+### 3.8 Langue de l’UI
 
 - Toggle FR ↔ MG dans l’AppBar (affiche le code courant : `FR` / `MG`).
 - Persistance `SharedPreferences` clé `app_locale_code`.
 - Défaut : français. Code inconnu → français.
 
-### 3.8 Hors périmètre actuel (non implémenté)
+### 3.9 Hors périmètre actuel (non implémenté)
 
 Malgré quelques clés l10n héritées (`tabWorshipLists`, `verseOfTheDay`), **les listes de culte** et le **verset du jour** ne sont pas des fonctionnalités livrées.
 
@@ -180,6 +191,7 @@ Pas de Play Store, pas de TestFlight, pas de compte utilisateur nominatif pour l
 | Responsive | Breakpoints 640 / 768 / 1024 / 1280 / 1536. NavigationBar vs NavigationRail. Largeur max du contenu. |
 | Testabilité | Domain pur + DIP : 122 tests unitaires sans projet Firebase réel. |
 | Distribution | APK signé, landing Hosting, pas de store. |
+| Analytics | Firebase Analytics (GA4) — app mobile + landing Hosting. Pas de PII ; collecte à partir de l’activation (pas de données rétroactives). |
 
 ---
 
@@ -190,9 +202,10 @@ Pas de Play Store, pas de TestFlight, pas de compte utilisateur nominatif pour l
 | Framework | Flutter / Dart | SDK `^3.10.1`, Flutter 3.x stable |
 | État | `flutter_riverpod` | `^2.6.1` (Provider, StateProvider, StreamProvider, StateNotifierProvider) |
 | Navigation | `go_router` | `^15.1.2` |
-| Backend | Firebase | Auth, Cloud Firestore, Hosting |
+| Backend | Firebase | Auth, Cloud Firestore, Hosting, **Analytics (GA4)** |
 | Auth | `firebase_auth` | Anonyme + Email/Password |
 | Données | `cloud_firestore` | Persistence native mobile |
+| Analytics | `firebase_analytics` | Événements app + `screen_view` via GoRouter |
 | Préférences | `shared_preferences` | Locale UI uniquement |
 | Typo | `google_fonts` | Inter **embarqué** (Regular / Italic / Medium / MediumItalic / SemiBold / Bold + OFL). Pas de fetch réseau. |
 | Splash / icônes | `flutter_native_splash`, `flutter_launcher_icons` | Asset `assets/branding/app_icon.png` |
@@ -248,7 +261,7 @@ Conséquence : on peut tester un contrôleur avec `mocktail` sans Firestore, et 
 
 ### 6.3 Principes SOLID appliqués
 
-- **S** — `SongFilterService` ne fait que filtrer/scorer ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
+- **S** — `SongFilterService` ne fait que filtrer/scorer ; `SongNumberComparator` ne trie que des numéros ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
 - **O** — nouveaux `SearchScope` via le `switch` du scorer (évolution localisée).
 - **L** — les `*Impl` sont substituables aux contrats.
 - **I** — contrats étroits (`FavoriteRepository` ≠ `SongRepository`).
@@ -280,6 +293,7 @@ lib/
 ├── l10n/                          # .arb + fichiers générés
 ├── core/
 │   ├── firebase/firebase_bootstrap.dart
+│   ├── analytics/                 # AnalyticsClient, observer GoRouter, providers
 │   ├── l10n/locale_controller.dart, fallback_localizations.dart
 │   ├── responsiveness/            # breakpoints, configs, extensions
 │   ├── router/app_router.dart
@@ -296,7 +310,7 @@ lib/
 
 test/                              # miroir de lib/ (unitaires)
 scripts/                           # import fihirana (Python + JSON)
-hosting/                           # landing APK (index.html, icône, .bin gitignoré)
+hosting/                           # landing APK (index.html, analytics-config.js, icône, .bin gitignoré)
 firestore.rules
 firestore.indexes.json
 firebase.json
@@ -399,6 +413,7 @@ Usage liturgique : on chante le 1er couplet puis le refrain, même si la source 
 **`SongSubmissionRepository`**
 
 - `watchPending()`
+- `watchMine()` — soumissions de l’utilisateur courant (tous statuts)
 - `submitCreate(Song)`
 - `submitUpdate({targetSongId, song})`
 - `approve(SongSubmission)` / `reject(submissionId)`
@@ -457,6 +472,8 @@ reviewedAt: string ISO-8601 UTC   # posé au approve/reject (merge)
 ```
 
 `watchPending` : query Firestore `where status == pending`, tri `createdAt` desc (les `createdAt` nulls en dernier via epoch 0).
+
+`watchMine` : query `where createdBy == uid` ; tri client identique. `StateError` si pas de session.
 
 `submitCreate` / `submitUpdate` : exigent `currentUser.uid`, sinon `StateError`. Recalculent `searchText` du payload.
 
@@ -652,6 +669,7 @@ La recherche **ne interroge pas** Firestore : elle opère sur le snapshot déjà
 | `/add` | `add-song` | `AddSongScreen` | oui |
 | `/song/:id` | `song-detail` | `SongDetailScreen` | non |
 | `/edit/:id` | `edit-song` | `AddSongScreen(editingSong:)` | non |
+| `/submissions` | `my-submissions` | `MySubmissionsScreen` | non |
 | `/admin/login` | `admin-login` | `AdminLoginScreen` | non |
 | `/admin` | `admin-moderation` | `ModerationScreen` | non |
 
@@ -717,6 +735,7 @@ songFilterServiceProvider  → const SongFilterService()
 | `searchScopeProvider` | `StateProvider<SearchScope>` | `all` |
 | `filteredSongsProvider` | `Provider<List<Song>>` | `SongFilterService` |
 | `pendingSubmissionsProvider` | `StreamProvider<List<SongSubmission>>` | `watchPending()` |
+| `mySubmissionsProvider` | `StreamProvider<List<SongSubmission>>` | `watchMine()` |
 | `authStateProvider` | `StreamProvider<User?>` | auth |
 | `isAdminProvider` | `StreamProvider<bool>` | `watchIsAdmin()` |
 | `localeControllerProvider` | `StateNotifierProvider<Locale, LocaleController>` | prefs |
@@ -795,12 +814,12 @@ Pas de thème sombre livré.
 
 ## 19. Tests
 
-Emplacement : `test/`, miroir de `lib/`. **122** tests unitaires, `flutter analyze` clean.
+Emplacement : `test/`, miroir de `lib/`. **129** tests unitaires, `flutter analyze` clean.
 
 | Zone | Outil | Ce qui est couvert |
 | --- | --- | --- |
 | Entités | pur Dart | enums `fromString`, `copyWith`, `sectionsForDisplay`, `isPending` |
-| Services | pur Dart | accents, scopes, ranking, favoris |
+| Services | pur Dart | accents, scopes, ranking, favoris, tri naturel numéros |
 | Mappers | pur Dart | round-trip Firestore maps, défauts, `buildSearchText`, `includeSections` |
 | Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved (query `where`), catalogue sans paroles, cache-first `getById`, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
 | Repositories | `mocktail` | délégation + toggle favori |
@@ -818,7 +837,7 @@ Commande : `flutter test`
 
 ### 20.1 Versioning
 
-`pubspec.yaml` : `version: 0.1.1+2`  
+`pubspec.yaml` : `version: 0.1.2+3`  
 → `versionName` 0.1.1, `versionCode` 2 (nécessaire pour réinstaller par-dessus l’APK précédent).
 
 ### 20.2 Signature Android
@@ -847,7 +866,8 @@ Procédure :
 3. Redirect 301 `/fva-songs.bin` → `/fva-songs.apk` (anciens liens).
 4. Headers sur `/fva-songs.apk` : `Content-Type: application/vnd.android.package-archive`, `Content-Disposition: attachment; filename="fva-songs.apk"`, `Cache-Control: no-cache`.
 5. Landing : bouton `href="fva-songs.apk"`.
-6. `firebase deploy --only hosting`
+6. **Analytics landing** : renseigner `hosting/analytics-config.js` avec le Measurement ID GA4 (`G-…`) du flux Web Firebase, puis `firebase deploy --only hosting`.
+7. `firebase deploy --only hosting`
 
 **URL :** https://fvasongs-d8055.web.app  
 **Console :** https://console.firebase.google.com/project/fvasongs-d8055/overview
@@ -876,17 +896,17 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 
 1. **Favoris liés à l’anonyme** — perte à la réinstallation ; logout admin recrée un uid.  
 2. **Pas de garde de route `/admin`** — sécurité réelle = rules.  
-3. **Tri des numéros lexicographique** — `"10"` avant `"2"` en string sort. Les numéros « bis » sont des chaînes.  
-4. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
-5. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
-6. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
-7. **Clés l10n mortes** — listes de culte / verset du jour.  
-8. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
-9. **iOS non distribué** — besoin compte développeur Apple.  
-10. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
-11. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
-12. **Pas de CI** dans le dépôt au moment de cette spec.  
-13. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
+3. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
+4. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
+5. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
+6. **Clés l10n mortes** — listes de culte / verset du jour.  
+7. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
+8. **iOS non distribué** — besoin compte développeur Apple.  
+9. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
+10. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
+11. **Pas de CI** dans le dépôt au moment de cette spec.  
+12. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
+13. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
 
 ---
 
@@ -904,3 +924,46 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 - Split APKs (armeabi-v7a / arm64) pour réduire le poids du téléchargement.
 
 Toute évolution de schéma Firestore **doit** mettre à jour : ce document, `firestore.rules`, les mappers, et les tests de datasource.
+
+---
+
+## 24. Analytics (GA4)
+
+Mesure d’usage via **Google Analytics 4**, lié au projet Firebase `fvasongs-d8055`. Deux canaux :
+
+| Canal | Mécanisme | Activation |
+| --- | --- | --- |
+| **App mobile** | Package `firebase_analytics` + abstraction `AnalyticsClient` (`lib/core/analytics/`) | Activer Google Analytics dans la console Firebase (si pas déjà fait) ; rebuild / redéployer l’APK. |
+| **Landing Hosting** | gtag GA4 dans `hosting/index.html`, ID dans `hosting/analytics-config.js` | Créer un flux de données **Web** dans Firebase → copier le Measurement ID `G-…` dans `analytics-config.js` → `firebase deploy --only hosting`. |
+
+### 24.1 Architecture app
+
+- **`AnalyticsClient`** — contrat Dart pur ; **`FirebaseAnalyticsClient`** en prod ; **`NoOpAnalyticsClient`** par défaut dans les tests unitaires des contrôleurs.
+- **`AnalyticsRouteObserver`** — enregistre un `screen_view` à chaque route GoRouter nommée (`songs`, `favorites`, `song-detail`, etc.).
+- Injection Riverpod : `analyticsClientProvider`.
+
+### 24.2 Événements custom (app)
+
+Aucune PII, pas de texte de recherche, pas de titres / paroles de chants.
+
+| Événement | Paramètres | Déclencheur |
+| --- | --- | --- |
+| `screen_view` | `screenName` (nom de route) | Navigation GoRouter |
+| `search` | `scope`, `query_length` | Debounce barre de recherche (query non vide) |
+| `search_scope_change` | `scope` | Tap chip filtre |
+| `favorite_toggle` | `action` : `add` \| `remove` | Toggle favori |
+| `song_save` | `action` : `create` \| `update`, `outcome` : `published` \| `pending_review` | Enregistrement formulaire |
+| `moderation_action` | `action` : `approve` \| `reject`, `submission_type` (approve) | Modération admin |
+| `locale_change` | `from`, `to` | Bascule FR ↔ MG |
+| `admin_auth_sign_in` / `admin_auth_sign_out` | — | Login / logout admin |
+
+### 24.3 Landing
+
+- **`page_view`** automatique si le Measurement ID est renseigné.
+- **`apk_download`** — clic sur le bouton de téléchargement Android.
+
+### 24.4 Console et délais
+
+- Rapports : [Firebase Analytics](https://console.firebase.google.com/project/fvasongs-d8055/analytics) (même propriété GA4).
+- Agrégats : ~24–48 h ; **DebugView** en quasi temps réel (`adb` / Xcode debug).
+- **Pas de rétroactivité** : seules les sessions post-déploiement sont comptées.

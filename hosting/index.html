@@ -6,6 +6,24 @@
 <title>FVA Songs — Télécharger l'application</title>
 <meta name="description" content="Téléchargez FVA Songs, l'application de chants et cantiques FVA, directement sur votre téléphone Android." />
 <link rel="icon" href="app_icon.png" />
+<script src="analytics-config.js"></script>
+<script>
+  (function () {
+    var id = window.FVA_GA_MEASUREMENT_ID;
+    if (!id) return;
+
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
+    document.head.appendChild(script);
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', id);
+  })();
+</script>
 <style>
   :root {
     --primary: #000666;
@@ -141,13 +159,18 @@
     <h1>FVA Songs</h1>
     <p class="tagline">Chants et cantiques FVA : recherche, favoris, ajout et modification de chants.</p>
 
-    <a class="btn-download" href="fva-songs.apk" download="fva-songs.apk">
+    <a
+      class="btn-download"
+      href="fva-songs.apk"
+      download="fva-songs.apk"
+      onclick="if (window.gtag) gtag('event', 'apk_download');"
+    >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 3v12m0 0-4-4m4 4 4-4M5 19h14" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       Télécharger pour Android
     </a>
-    <p class="meta">Version 0.1.1 · Fichier .apk · ~57 Mo · Android 5.0 et plus</p>
+    <p class="meta">Version 0.1.2 · Fichier .apk · ~57 Mo · Android 5.0 et plus</p>
 
     <details>
       <summary>Comment installer l'application ?</summary>

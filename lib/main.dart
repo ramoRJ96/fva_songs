@@ -58,7 +58,7 @@ class FvaSongsApp extends ConsumerWidget {
         FallbackCupertinoLocalizationsDelegate(),
         GlobalWidgetsLocalizations.delegate,
       ],
-      routerConfig: AppRouter.router,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }

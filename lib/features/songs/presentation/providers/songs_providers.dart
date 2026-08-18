@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/analytics/analytics_client.dart';
+import '../../../../core/analytics/analytics_events.dart';
+import '../../../../core/analytics/analytics_providers.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/datasources/favorite_remote_datasource.dart';
 import '../../data/datasources/song_remote_datasource.dart';
@@ -115,18 +118,31 @@ final favoriteSongsProvider = Provider<List<Song>>((ref) {
 });
 
 final favoritesControllerProvider = Provider<FavoritesController>((ref) {
-  return FavoritesController(ref.watch(favoriteRepositoryProvider));
+  return FavoritesController(
+    ref.watch(favoriteRepositoryProvider),
+    analytics: ref.watch(analyticsClientProvider),
+  );
 });
 
 class FavoritesController {
-  FavoritesController(this._repository);
+  FavoritesController(
+    this._repository, {
+    AnalyticsClient analytics = const NoOpAnalyticsClient(),
+  }) : _analytics = analytics;
 
   final FavoriteRepository _repository;
+  final AnalyticsClient _analytics;
 
-  Future<void> toggle(String songId, {required bool currentlyFavorite}) {
-    return _repository.toggleFavorite(
+  Future<void> toggle(String songId, {required bool currentlyFavorite}) async {
+    await _repository.toggleFavorite(
       songId,
       currentlyFavorite: currentlyFavorite,
+    );
+    await _analytics.logEvent(
+      AnalyticsEvents.favoriteToggle,
+      parameters: {
+        'action': currentlyFavorite ? 'remove' : 'add',
+      },
     );
   }
 }
@@ -170,6 +186,7 @@ final addSongControllerProvider = Provider<AddSongController>((ref) {
     songs: ref.watch(songRepositoryProvider),
     submissions: ref.watch(songSubmissionRepositoryProvider),
     isAdmin: () => ref.read(isAdminProvider).valueOrNull ?? false,
+    analytics: ref.watch(analyticsClientProvider),
   );
 });
 
@@ -178,13 +195,16 @@ class AddSongController {
     required SongRepository songs,
     required SongSubmissionRepository submissions,
     required bool Function() isAdmin,
+    AnalyticsClient analytics = const NoOpAnalyticsClient(),
   })  : _songs = songs,
         _submissions = submissions,
-        _isAdmin = isAdmin;
+        _isAdmin = isAdmin,
+        _analytics = analytics;
 
   final SongRepository _songs;
   final SongSubmissionRepository _submissions;
   final bool Function() _isAdmin;
+  final AnalyticsClient _analytics;
 
   Future<SongSaveOutcome> save({
     required String title,
@@ -219,6 +239,7 @@ class AddSongController {
       } else {
         await _songs.addApprovedSong(song);
       }
+      await _logSongSave(action: isEdit ? 'update' : 'create', outcome: 'published');
       return SongSaveOutcome.published;
     }
 
@@ -230,7 +251,21 @@ class AddSongController {
     } else {
       await _submissions.submitCreate(song);
     }
+    await _logSongSave(action: isEdit ? 'update' : 'create', outcome: 'pending_review');
     return SongSaveOutcome.pendingReview;
+  }
+
+  Future<void> _logSongSave({
+    required String action,
+    required String outcome,
+  }) {
+    return _analytics.logEvent(
+      AnalyticsEvents.songSave,
+      parameters: {
+        'action': action,
+        'outcome': outcome,
+      },
+    );
   }
 
   String _computeFirstLine(List<LyricSection> sections) {
@@ -255,19 +290,44 @@ final pendingSubmissionsProvider =
   return ref.watch(songSubmissionRepositoryProvider).watchPending();
 });
 
+final mySubmissionsProvider = StreamProvider<List<SongSubmission>>((ref) {
+  return ref.watch(songSubmissionRepositoryProvider).watchMine();
+});
+
 final moderationControllerProvider = Provider<ModerationController>((ref) {
-  return ModerationController(ref.watch(songSubmissionRepositoryProvider));
+  return ModerationController(
+    ref.watch(songSubmissionRepositoryProvider),
+    analytics: ref.watch(analyticsClientProvider),
+  );
 });
 
 class ModerationController {
-  ModerationController(this._repository);
+  ModerationController(
+    this._repository, {
+    AnalyticsClient analytics = const NoOpAnalyticsClient(),
+  }) : _analytics = analytics;
 
   final SongSubmissionRepository _repository;
+  final AnalyticsClient _analytics;
 
-  Future<void> approve(SongSubmission submission) =>
-      _repository.approve(submission);
+  Future<void> approve(SongSubmission submission) async {
+    await _repository.approve(submission);
+    await _analytics.logEvent(
+      AnalyticsEvents.moderationAction,
+      parameters: {
+        'action': 'approve',
+        'submission_type': submission.type.name,
+      },
+    );
+  }
 
-  Future<void> reject(String submissionId) => _repository.reject(submissionId);
+  Future<void> reject(String submissionId) async {
+    await _repository.reject(submissionId);
+    await _analytics.logEvent(
+      AnalyticsEvents.moderationAction,
+      parameters: {'action': 'reject'},
+    );
+  }
 }
 
 /// Helper debounce pour la barre de recherche.

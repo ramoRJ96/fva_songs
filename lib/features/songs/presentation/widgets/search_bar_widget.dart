@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/analytics/analytics_events.dart';
+import '../../../../core/analytics/analytics_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -23,6 +25,20 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget> {
     _debouncer.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _logSearch(String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    final scope = ref.read(searchScopeProvider);
+    ref.read(analyticsClientProvider).logEvent(
+          AnalyticsEvents.search,
+          parameters: {
+            'scope': scope.name,
+            'query_length': trimmed.length,
+          },
+        );
   }
 
   @override
@@ -48,6 +64,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget> {
           setState(() {});
           _debouncer.run(() {
             ref.read(searchQueryProvider.notifier).state = value;
+            _logSearch(value);
           });
         },
         style: AppTextStyles.bodyMd(color: AppColors.onSurface),

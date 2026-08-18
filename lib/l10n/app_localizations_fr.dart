@@ -235,6 +235,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sanctuaryModeSoon => 'Mode projection — bientôt disponible';
 
   @override
+  String get screenStayOnActive =>
+      'L\'écran reste allumé pendant l\'affichage des paroles.';
+
+  @override
   String get projectionMode => 'Projection';
 
   @override
@@ -298,4 +302,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get moderationReject => 'Refuser';
+
+  @override
+  String get mySubmissionsTitle => 'Mes propositions';
+
+  @override
+  String get mySubmissionsEmptyTitle => 'Aucune proposition';
+
+  @override
+  String get mySubmissionsEmptySubtitle =>
+      'Vos ajouts et modifications soumis apparaîtront ici.';
+
+  @override
+  String get submissionStatusPending => 'En attente';
+
+  @override
+  String get submissionStatusApproved => 'Approuvée';
+
+  @override
+  String get submissionStatusRejected => 'Refusée';
 }

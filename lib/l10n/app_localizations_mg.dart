@@ -233,6 +233,10 @@ class AppLocalizationsMg extends AppLocalizations {
   String get sanctuaryModeSoon => 'Mode projection — ho avy tsy ho ela';
 
   @override
+  String get screenStayOnActive =>
+      'Mijanona mbola mandre ny efijery mandritra ny fanehoana ny tononkira.';
+
+  @override
   String get projectionMode => 'Projection';
 
   @override
@@ -296,4 +300,23 @@ class AppLocalizationsMg extends AppLocalizations {
 
   @override
   String get moderationReject => 'Aza ekena';
+
+  @override
+  String get mySubmissionsTitle => 'Ny soso-kevitro';
+
+  @override
+  String get mySubmissionsEmptyTitle => 'Tsy misy soso-kevitra';
+
+  @override
+  String get mySubmissionsEmptySubtitle =>
+      'Hiseho eto ny fanampiana sy fanovana alefanao.';
+
+  @override
+  String get submissionStatusPending => 'Miandry';
+
+  @override
+  String get submissionStatusApproved => 'Ekena';
+
+  @override
+  String get submissionStatusRejected => 'Nolavina';
 }

@@ -86,6 +86,7 @@
   "loadingSongs": "Loading ny hira...",
   "errorLoadingSongs": "Tsy afaka naka ny hira.",
   "sanctuaryModeSoon": "Mode projection — ho avy tsy ho ela",
+  "screenStayOnActive": "Mijanona mbola mandre ny efijery mandritra ny fanehoana ny tononkira.",
   "projectionMode": "Projection",
   "authorLabel": "Mpanoratra",
   "keyLabel": "Feo",
@@ -106,5 +107,11 @@
   "moderationTypeCreate": "Fanampiana vaovao",
   "moderationTypeUpdate": "Fanovana",
   "moderationApprove": "Ekeno",
-  "moderationReject": "Aza ekena"
+  "moderationReject": "Aza ekena",
+  "mySubmissionsTitle": "Ny soso-kevitro",
+  "mySubmissionsEmptyTitle": "Tsy misy soso-kevitra",
+  "mySubmissionsEmptySubtitle": "Hiseho eto ny fanampiana sy fanovana alefanao.",
+  "submissionStatusPending": "Miandry",
+  "submissionStatusApproved": "Ekena",
+  "submissionStatusRejected": "Nolavina"
 }

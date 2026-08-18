@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../../core/responsiveness/extensions.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -37,6 +38,18 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
     setState(() {
       _fontSize = (_fontSize + delta).clamp(_minFontSize, _maxFontSize);
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WakelockPlus.enable();
+  }
+
+  @override
+  void dispose() {
+    WakelockPlus.disable();
+    super.dispose();
   }
 
   @override
@@ -153,7 +166,7 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          l10n.sanctuaryModeSoon,
+          l10n.screenStayOnActive,
           style: AppTextStyles.labelSm(color: Colors.white),
         ),
         backgroundColor: AppColors.primary,

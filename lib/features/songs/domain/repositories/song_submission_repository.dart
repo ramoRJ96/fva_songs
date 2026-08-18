@@ -5,6 +5,8 @@ import '../entities/song_submission.dart';
 abstract class SongSubmissionRepository {
   Stream<List<SongSubmission>> watchPending();
 
+  Stream<List<SongSubmission>> watchMine();
+
   Future<SongSubmission> submitCreate(Song song);
 
   Future<SongSubmission> submitUpdate({

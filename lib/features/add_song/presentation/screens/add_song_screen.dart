@@ -374,6 +374,14 @@ class _AddSongScreenState extends ConsumerState<AddSongScreen> {
           style: AppTextStyles.headlineLgMobile(color: AppColors.primary),
         ),
         centerTitle: true,
+        actions: [
+          if (!_isEditing)
+            IconButton(
+              tooltip: l10n.mySubmissionsTitle,
+              icon: const Icon(Icons.history_outlined, color: AppColors.primary),
+              onPressed: () => context.push('/submissions'),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(

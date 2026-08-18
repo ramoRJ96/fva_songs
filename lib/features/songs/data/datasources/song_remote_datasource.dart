@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/song.dart';
+import '../../domain/services/song_number_comparator.dart';
 import '../models/song_model.dart';
 
 /// Source de données Firestore pour les chants.
@@ -35,7 +36,7 @@ class SongRemoteDataSource {
             ).song,
           )
           .toList()
-        ..sort((a, b) => a.number.compareTo(b.number));
+        ..sort((a, b) => SongNumberComparator.compare(a.number, b.number));
       return songs;
     });
   }

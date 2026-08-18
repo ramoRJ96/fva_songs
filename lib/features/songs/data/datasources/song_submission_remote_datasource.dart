@@ -35,13 +35,37 @@ class SongSubmissionRemoteDataSource {
                 SongSubmissionModel.fromFirestore(doc.id, doc.data()).submission,
           )
           .toList()
-        ..sort((a, b) {
-          final aAt = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-          final bAt = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-          return bAt.compareTo(aAt);
-        });
+        ..sort(_sortByCreatedAtDesc);
       return list;
     });
+  }
+
+  /// Propositions de l'utilisateur courant (tous statuts).
+  Stream<List<SongSubmission>> watchMine() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Utilisateur non authentifié');
+    }
+
+    return _submissions
+        .where('createdBy', isEqualTo: uid)
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map(
+            (doc) =>
+                SongSubmissionModel.fromFirestore(doc.id, doc.data()).submission,
+          )
+          .toList()
+        ..sort(_sortByCreatedAtDesc);
+      return list;
+    });
+  }
+
+  static int _sortByCreatedAtDesc(SongSubmission a, SongSubmission b) {
+    final aAt = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bAt = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bAt.compareTo(aAt);
   }
 
   Future<SongSubmission> submitCreate(Song song) async {

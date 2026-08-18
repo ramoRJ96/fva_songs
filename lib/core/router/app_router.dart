@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/add_song/presentation/screens/add_song_screen.dart';
+import '../../features/add_song/presentation/screens/my_submissions_screen.dart';
 import '../../features/auth/presentation/screens/admin_login_screen.dart';
 import '../../features/favorites/presentation/screens/favorites_screen.dart';
 import '../../features/moderation/presentation/screens/moderation_screen.dart';
@@ -10,14 +11,17 @@ import '../../features/songs/presentation/providers/songs_providers.dart';
 import '../../features/songs/presentation/screens/song_detail_screen.dart';
 import '../../features/songs/presentation/screens/song_list_screen.dart';
 import '../../l10n/app_localizations.dart';
+import '../analytics/analytics_route_observer.dart';
+import '../analytics/analytics_providers.dart';
 import '../responsiveness/extensions.dart';
 import '../theme/app_colors.dart';
 
-class AppRouter {
-  AppRouter._();
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final analytics = ref.watch(analyticsClientProvider);
 
-  static final GoRouter router = GoRouter(
+  return GoRouter(
     initialLocation: '/',
+    observers: [AnalyticsRouteObserver(analytics)],
     routes: [
       ShellRoute(
         builder: (context, state, child) => _ShellScaffold(child: child),
@@ -67,6 +71,11 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: '/submissions',
+        name: 'my-submissions',
+        builder: (context, state) => const MySubmissionsScreen(),
+      ),
+      GoRoute(
         path: '/admin/login',
         name: 'admin-login',
         builder: (context, state) => const AdminLoginScreen(),
@@ -78,7 +87,7 @@ class AppRouter {
       ),
     ],
   );
-}
+});
 
 class _EditSongRoute extends ConsumerWidget {
   const _EditSongRoute({required this.songId});
