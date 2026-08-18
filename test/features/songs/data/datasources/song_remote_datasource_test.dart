@@ -62,6 +62,25 @@ void main() {
 
       expect(songs, hasLength(2));
       expect(songs.map((s) => s.number), ['2', '5']);
+    });
+
+    test('trie les numéros dans l\'ordre naturel (2 avant 10)', () async {
+      await firestore
+          .collection('songs')
+          .add(SongModel(_song(number: '10')).toFirestore());
+      await firestore
+          .collection('songs')
+          .add(SongModel(_song(number: '2')).toFirestore());
+      await firestore
+          .collection('songs')
+          .add(SongModel(_song(number: '28 bis')).toFirestore());
+      await firestore
+          .collection('songs')
+          .add(SongModel(_song(number: '28')).toFirestore());
+
+      final songs = await dataSource.watchSongs().first;
+
+      expect(songs.map((s) => s.number), ['2', '10', '28', '28 bis']);
       expect(songs.every((s) => s.status == SongStatus.approved), isTrue);
     });
 

@@ -524,6 +524,12 @@ abstract class AppLocalizations {
   /// **'Mode projection — bientôt disponible'**
   String get sanctuaryModeSoon;
 
+  /// No description provided for @screenStayOnActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'écran reste allumé pendant l\'affichage des paroles.'**
+  String get screenStayOnActive;
+
   /// No description provided for @projectionMode.
   ///
   /// In fr, this message translates to:
@@ -649,6 +655,42 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Refuser'**
   String get moderationReject;
+
+  /// No description provided for @mySubmissionsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes propositions'**
+  String get mySubmissionsTitle;
+
+  /// No description provided for @mySubmissionsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune proposition'**
+  String get mySubmissionsEmptyTitle;
+
+  /// No description provided for @mySubmissionsEmptySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos ajouts et modifications soumis apparaîtront ici.'**
+  String get mySubmissionsEmptySubtitle;
+
+  /// No description provided for @submissionStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get submissionStatusPending;
+
+  /// No description provided for @submissionStatusApproved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Approuvée'**
+  String get submissionStatusApproved;
+
+  /// No description provided for @submissionStatusRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusée'**
+  String get submissionStatusRejected;
 }
 
 class _AppLocalizationsDelegate

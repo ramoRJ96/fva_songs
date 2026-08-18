@@ -12,6 +12,9 @@ class SongSubmissionRepositoryImpl implements SongSubmissionRepository {
   Stream<List<SongSubmission>> watchPending() => _remote.watchPending();
 
   @override
+  Stream<List<SongSubmission>> watchMine() => _remote.watchMine();
+
+  @override
   Future<SongSubmission> submitCreate(Song song) => _remote.submitCreate(song);
 
   @override

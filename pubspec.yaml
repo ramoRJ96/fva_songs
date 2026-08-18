@@ -1,7 +1,7 @@
 name: fva_songs
 description: "Application de chants et cantiques pour le culte - FVA Songs"
 publish_to: 'none'
-version: 0.1.1+2
+version: 0.1.2+3
 
 environment:
   sdk: ^3.10.1
@@ -20,6 +20,8 @@ dependencies:
   cloud_firestore: ^5.6.11
   shared_preferences: ^2.5.3
   flutter_native_splash: ^2.4.6
+  firebase_analytics: ^11.6.0
+  wakelock_plus: ^1.7.0
 
 dev_dependencies:
   flutter_test:

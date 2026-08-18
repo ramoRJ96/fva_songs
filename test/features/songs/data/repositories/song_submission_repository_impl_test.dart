@@ -53,6 +53,13 @@ void main() {
     expect(repository.watchPending(), stream);
   });
 
+  test('watchMine délègue à la datasource', () {
+    final stream = Stream<List<SongSubmission>>.value([_submission()]);
+    when(() => remote.watchMine()).thenAnswer((_) => stream);
+
+    expect(repository.watchMine(), stream);
+  });
+
   test('submitCreate délègue à la datasource', () async {
     final song = _song();
     final submission = _submission();

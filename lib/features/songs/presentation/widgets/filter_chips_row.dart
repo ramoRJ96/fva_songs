@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/analytics/analytics_events.dart';
+import '../../../../core/analytics/analytics_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -41,7 +43,12 @@ class FilterChipsRow extends ConsumerWidget {
             label: label,
             isActive: isActive,
             onTap: () {
+              if (scope == active) return;
               ref.read(searchScopeProvider.notifier).state = scope;
+              ref.read(analyticsClientProvider).logEvent(
+                    AnalyticsEvents.searchScopeChange,
+                    parameters: {'scope': scope.name},
+                  );
             },
           );
         },

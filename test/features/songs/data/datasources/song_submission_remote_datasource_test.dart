@@ -77,6 +77,54 @@ void main() {
     });
   });
 
+  group('watchMine', () {
+    test('renvoie les soumissions de l\'utilisateur courant, tous statuts', () async {
+      final mine = SongSubmission(
+        id: '',
+        type: SubmissionType.create,
+        status: SubmissionStatus.pending,
+        createdBy: 'uid-1',
+        payload: _song(title: 'La mienne'),
+        createdAt: DateTime.utc(2024, 6, 1),
+      );
+      final other = SongSubmission(
+        id: '',
+        type: SubmissionType.create,
+        status: SubmissionStatus.pending,
+        createdBy: 'uid-2',
+        payload: _song(title: 'Autre'),
+        createdAt: DateTime.utc(2024, 5, 1),
+      );
+      final approved = SongSubmission(
+        id: '',
+        type: SubmissionType.update,
+        status: SubmissionStatus.approved,
+        createdBy: 'uid-1',
+        payload: _song(title: 'Traitée'),
+        createdAt: DateTime.utc(2024, 1, 1),
+      );
+
+      for (final s in [mine, other, approved]) {
+        await firestore.collection('song_submissions').add(_toFirestore(s));
+      }
+
+      final items = await dataSource.watchMine().first;
+
+      expect(items.map((s) => s.payload.title), ['La mienne', 'Traitée']);
+    });
+
+    test('échoue si aucun utilisateur n\'est authentifié', () async {
+      final anonAuth = MockFirebaseAuth(signedIn: false);
+      final anonDataSource = SongSubmissionRemoteDataSource(
+        firestore: firestore,
+        auth: anonAuth,
+        songs: songsDataSource,
+      );
+
+      expect(() => anonDataSource.watchMine(), throwsStateError);
+    });
+  });
+
   group('watchPending', () {
     test(
       'ne renvoie que les soumissions en attente, plus récentes en premier',
