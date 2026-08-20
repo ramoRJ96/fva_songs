@@ -656,6 +656,36 @@ abstract class AppLocalizations {
   /// **'Refuser'**
   String get moderationReject;
 
+  /// No description provided for @moderationDiffCurrent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actuel'**
+  String get moderationDiffCurrent;
+
+  /// No description provided for @moderationDiffProposed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Proposé'**
+  String get moderationDiffProposed;
+
+  /// No description provided for @moderationDiffLyrics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paroles'**
+  String get moderationDiffLyrics;
+
+  /// No description provided for @moderationUnchanged.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inchangé'**
+  String get moderationUnchanged;
+
+  /// No description provided for @moderationCurrentMissing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le chant actuel n\'est plus dans le catalogue. Aperçu de la proposition uniquement.'**
+  String get moderationCurrentMissing;
+
   /// No description provided for @mySubmissionsTitle.
   ///
   /// In fr, this message translates to:

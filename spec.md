@@ -158,8 +158,9 @@ Résultat :
 - Login email + mot de passe. Après succès, vérification `isCurrentUserAdmin()` : si false, message d’erreur (compte Firebase Auth sans rôle admin).
 - Écran de modération :
   - liste des soumissions `pending`, plus récentes en premier ;
-  - aperçu du payload (métadonnées + paroles réordonnées) ;
   - distinction create / update ;
+  - aperçu create : payload proposé (métadonnées + paroles `sectionsForDisplay`) ;
+  - aperçu update : **diff** champ par champ (`SongDiff`) entre le chant publié et la proposition (métadonnées barrées / nouvelles, paroles actuel vs proposé) ;
   - actions Approuver / Rejeter ;
   - bouton déconnexion.
 
@@ -261,7 +262,7 @@ Conséquence : on peut tester un contrôleur avec `mocktail` sans Firestore, et 
 
 ### 6.3 Principes SOLID appliqués
 
-- **S** — `SongFilterService` ne fait que filtrer/scorer ; `SongNumberComparator` ne trie que des numéros ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
+- **S** — `SongFilterService` ne fait que filtrer/scorer ; `SongNumberComparator` ne trie que des numéros ; `SongDiff` ne compare que deux `Song` ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
 - **O** — nouveaux `SearchScope` via le `switch` du scorer (évolution localisée).
 - **L** — les `*Impl` sont substituables aux contrats.
 - **I** — contrats étroits (`FavoriteRepository` ≠ `SongRepository`).
@@ -530,7 +531,7 @@ isAdmin     ⇔ signed in
 
 | Chemin | Read | Write |
 | --- | --- | --- |
-| `songs/{id}` | authentifié | create : admin **et** `status == approved` ; update/delete : admin |
+| `songs/{id}` | admin **ou** (authentifié **et** `status == approved`) | create : admin **et** `status == approved` ; update/delete : admin |
 | `song_submissions/{id}` | admin **ou** auteur (`createdBy == uid`) | create : authentifié, `status == pending`, `createdBy == uid`, type create/update, clés obligatoires ; update : admin et status ∈ approved/rejected/pending ; delete : admin |
 | `users/{userId}/favorites/{songId}` | `uid == userId` | idem |
 | `config/admins` | authentifié | **interdit** |
@@ -540,6 +541,7 @@ isAdmin     ⇔ signed in
 Implications :
 
 - Un fidèle **ne peut pas** créer un chant public, même en forgeant un client.
+- Un fidèle **ne peut pas** lire un document `songs` non `approved` (query catalogue `status == approved` compatible).
 - Un fidèle **ne peut pas** s’auto-promouvoir admin depuis l’app.
 - Un fidèle ne voit pas les soumissions des autres.
 - `isAdmin()` côté rules exige un **e-mail** sur le token : un anonyme ne matchera jamais.
@@ -688,7 +690,7 @@ Détail : paroles via `ListView.builder` (`sectionsForDisplay`).
 - **Small / medium** : `NavigationBar` 3 destinations (Chants, Favoris, Ajouter).
 - **Large+** (`useNavigationRail`) : `NavigationRail` + divider + contenu.
 
-Pas de garde de route GoRouter sur `/admin` : la protection réelle est Firestore. Un non-admin qui ouvre `/admin` verra une file vide / des erreurs de permission sur le stream.
+Garde GoRouter (`adminRedirect`) : `/admin` → `/admin/login` si le rôle est résolu et n’est pas admin ; `/admin/login` → `/admin` si déjà admin. Pendant le chargement du rôle, pas de redirect. La protection réelle des données reste Firestore.
 
 ### 14.3 Widgets clés (songs)
 
@@ -816,12 +818,12 @@ Pas de thème sombre livré.
 
 ## 19. Tests
 
-Emplacement : `test/`, miroir de `lib/`. **129** tests unitaires, `flutter analyze` clean.
+Emplacement : `test/`, miroir de `lib/`. Tests unitaires (voir `flutter test`), `flutter analyze` clean.
 
 | Zone | Outil | Ce qui est couvert |
 | --- | --- | --- |
 | Entités | pur Dart | enums `fromString`, `copyWith`, `sectionsForDisplay`, `isPending` |
-| Services | pur Dart | accents, scopes, ranking, favoris, tri naturel numéros |
+| Services | pur Dart | accents, scopes, ranking, favoris, tri naturel numéros, diff de chant, redirect admin |
 | Mappers | pur Dart | round-trip Firestore maps, défauts, `buildSearchText`, `includeSections` |
 | Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved (query `where`), catalogue sans paroles, cache-first `getById`, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
 | Repositories | `mocktail` | délégation + toggle favori |
@@ -971,7 +973,6 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 - Comptes fidèles (email / Google) pour survivre à la réinstall des favoris.
 - Listes de culte (clés l10n déjà présentes).
 - Pagination du catalogue / collection métadonnées séparée des paroles, pour réduire le trafic réseau.
-- Garde GoRouter `redirect` sur `/admin`.
 - Play Store / TestFlight.
 - Thème sombre.
 - Tests widget / golden des écrans critiques.
