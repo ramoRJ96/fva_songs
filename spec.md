@@ -310,6 +310,7 @@ lib/
         └── presentation/providers, screens, widgets
 
 test/                              # miroir de lib/ (unitaires)
+.github/workflows/ci.yml           # GitHub Actions : analyze + test
 scripts/                           # import fihirana (Python + JSON)
 hosting/                           # landing APK (index.html, analytics-config.js, icône, .bin gitignoré)
 firestore.rules
@@ -833,6 +834,8 @@ Non couvert (volontairement, hors unitaires) : tests de widgets/golden, tests d�
 
 Commande : `flutter test`
 
+CI : GitHub Actions (voir §20.5).
+
 ---
 
 ## 20. Build, signature et distribution
@@ -880,6 +883,23 @@ iOS : `flutter build ipa` + Apple Developer Program — **non livré**.
 
 Providers activés : Anonymous, Email/Password (`firebase.json` section `auth` documentaire + console).
 
+### 20.5 CI (GitHub Actions)
+
+Fichier : `.github/workflows/ci.yml`.
+
+Déclenchement : chaque **pull request**, chaque **push** sur `main`, et chaque **push** sur `feature/**`.
+
+Job unique (`ubuntu-latest`) :
+
+1. `flutter pub get`
+2. `flutter gen-l10n` puis `git diff --exit-code lib/l10n/` (les `.dart` générés doivent être commités)
+3. `flutter analyze`
+4. `flutter test`
+
+SDK CI : Flutter **3.41.0** (channel `stable`) — `pubspec.lock` exige Dart ≥ 3.11 / Flutter ≥ 3.41 à cause de `wakelock_plus` 1.7.
+
+**Pas de CD automatique** : le keystore Android et les tokens Firebase restent hors du dépôt. Build APK, copie `hosting/fva-songs.bin`, `firebase deploy --only hosting` et `firebase deploy --only firestore:rules` restent manuels (voir §20.2–20.3).
+
 ---
 
 ## 21. Import du catalogue
@@ -922,6 +942,7 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 - Thème sombre.
 - Tests widget / golden des écrans critiques.
 - Split APKs (armeabi-v7a / arm64) pour réduire le poids du téléchargement.
+- CD : build APK signé + deploy Hosting / rules depuis Actions (secrets GitHub).
 
 Toute évolution de schéma Firestore **doit** mettre à jour : ce document, `firestore.rules`, les mappers, et les tests de datasource.
 

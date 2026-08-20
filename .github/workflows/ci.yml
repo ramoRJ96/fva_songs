@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, "feature/**"]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # pubspec.lock requires Dart >= 3.11 / Flutter >= 3.41 (wakelock_plus 1.7).
+          channel: stable
+          flutter-version: "3.41.0"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Check generated l10n is committed
+        run: git diff --exit-code -- lib/l10n/
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
