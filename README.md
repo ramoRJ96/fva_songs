@@ -164,6 +164,8 @@ Run the full suite:
 flutter test
 ```
 
+GitHub Actions (`.github/workflows/ci.yml`) runs `flutter gen-l10n`, `flutter analyze`, and `flutter test` on every pull request, every push to `main`, and every push to `feature/**`. APK and Firebase deploys stay manual (signing keystore and Firebase tokens are not in the repo).
+
 Run a single file or directory:
 
 ```bash
