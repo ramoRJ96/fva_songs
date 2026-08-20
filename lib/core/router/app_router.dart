@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/add_song/presentation/screens/add_song_screen.dart';
 import '../../features/add_song/presentation/screens/my_submissions_screen.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/presentation/screens/admin_login_screen.dart';
 import '../../features/favorites/presentation/screens/favorites_screen.dart';
 import '../../features/moderation/presentation/screens/moderation_screen.dart';
@@ -15,13 +16,33 @@ import '../analytics/analytics_route_observer.dart';
 import '../analytics/analytics_providers.dart';
 import '../responsiveness/extensions.dart';
 import '../theme/app_colors.dart';
+import 'admin_redirect.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final analytics = ref.watch(analyticsClientProvider);
+  final refresh = ValueNotifier<int>(0);
+  ref.listen(isAdminProvider, (_, _) {
+    refresh.value++;
+  });
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: refresh,
     observers: [AnalyticsRouteObserver(analytics)],
+    redirect: (context, state) {
+      final adminAsync = ref.read(isAdminProvider);
+      final bool? isAdmin;
+      if (adminAsync.isLoading && !adminAsync.hasValue) {
+        isAdmin = null;
+      } else {
+        isAdmin = adminAsync.valueOrNull ?? false;
+      }
+      return adminRedirect(
+        location: state.matchedLocation,
+        isAdmin: isAdmin,
+      );
+    },
     routes: [
       ShellRoute(
         builder: (context, state, child) => _ShellScaffold(child: child),

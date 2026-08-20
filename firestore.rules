@@ -20,10 +20,11 @@ service cloud.firestore {
         );
     }
 
-    // Catalogue : lecture pour tout utilisateur authentifié ; écriture admin.
+    // Catalogue : lecture des approved pour tout authentifié ; admin voit tout.
     // Les propositions en attente vivent dans song_submissions, pas ici.
     match /songs/{songId} {
-      allow read: if isSignedIn();
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.status == 'approved');
       allow create: if isAdmin()
         && request.resource.data.status == 'approved';
       allow update, delete: if isAdmin();
