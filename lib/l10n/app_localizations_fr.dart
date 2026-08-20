@@ -304,6 +304,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get moderationReject => 'Refuser';
 
   @override
+  String get moderationDiffCurrent => 'Actuel';
+
+  @override
+  String get moderationDiffProposed => 'Proposé';
+
+  @override
+  String get moderationDiffLyrics => 'Paroles';
+
+  @override
+  String get moderationUnchanged => 'Inchangé';
+
+  @override
+  String get moderationCurrentMissing =>
+      'Le chant actuel n\'est plus dans le catalogue. Aperçu de la proposition uniquement.';
+
+  @override
   String get mySubmissionsTitle => 'Mes propositions';
 
   @override
