@@ -6,9 +6,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../songs/domain/entities/song.dart';
 import '../../../songs/domain/entities/song_submission.dart';
 import '../../../songs/presentation/providers/songs_providers.dart';
+import '../widgets/submission_diff_sheet.dart';
 
 class ModerationScreen extends ConsumerWidget {
   const ModerationScreen({super.key});
@@ -46,10 +46,7 @@ class ModerationScreen extends ConsumerWidget {
         error: (_, _) => Center(child: Text(l10n.adminNotAuthorized)),
         data: (isAdmin) {
           if (!isAdmin) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (context.mounted) context.go('/admin/login');
-            });
-            return const SizedBox.shrink();
+            return Center(child: Text(l10n.adminNotAuthorized));
           }
 
           return pendingAsync.when(
@@ -162,7 +159,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _showDetails(context, l10n, song),
+        onTap: () => _showDetails(context),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -260,7 +257,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
     );
   }
 
-  void _showDetails(BuildContext context, AppLocalizations l10n, Song song) {
+  void _showDetails(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -275,55 +272,13 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (context, controller) {
-            return ListView(
+            return SubmissionDiffSheet(
+              submission: widget.submission,
               controller: controller,
-              padding: const EdgeInsets.all(24),
-              children: [
-                Text(
-                  song.title,
-                  style: AppTextStyles.headlineMd(color: AppColors.onSurface),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  [
-                    if (song.number.isNotEmpty) 'N° ${song.number}',
-                    if (song.author.isNotEmpty) song.author,
-                    if (song.key.isNotEmpty) song.key,
-                    song.language.code.toUpperCase(),
-                  ].join(' · '),
-                  style: AppTextStyles.bodyMd(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                for (final section in song.sectionsForDisplay) ...[
-                  Text(
-                    _sectionTitle(section, l10n),
-                    style: AppTextStyles.labelCaps(color: AppColors.primary),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    section.lines.join('\n'),
-                    style: AppTextStyles.bodyLg(color: AppColors.onSurface),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ],
             );
           },
         );
       },
     );
-  }
-
-  String _sectionTitle(LyricSection section, AppLocalizations l10n) {
-    switch (section.type) {
-      case SectionType.refrain:
-        return l10n.refrainLabel;
-      case SectionType.chorus:
-        return l10n.chorusLabel;
-      case SectionType.couplet:
-        return l10n.coupletLabel(section.index ?? 0);
-    }
   }
 }
