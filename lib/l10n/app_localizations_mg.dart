@@ -302,6 +302,22 @@ class AppLocalizationsMg extends AppLocalizations {
   String get moderationReject => 'Aza ekena';
 
   @override
+  String get moderationDiffCurrent => 'Ankehitriny';
+
+  @override
+  String get moderationDiffProposed => 'Soso-kevitra';
+
+  @override
+  String get moderationDiffLyrics => 'Tononkira';
+
+  @override
+  String get moderationUnchanged => 'Tsy niova';
+
+  @override
+  String get moderationCurrentMissing =>
+      'Tsy ao anaty lisitra intsony ny hira ankehitriny. Ny soso-kevitra ihany no hita.';
+
+  @override
   String get mySubmissionsTitle => 'Ny soso-kevitro';
 
   @override

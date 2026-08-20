@@ -1,8 +1,8 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.6  
+**Version du document :** 1.7  
 **Version de l’application :** 0.1.2+3  
-**Date :** 18 août 2026  
+**Date :** 20 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
 Ce document décrit le produit tel qu’il est implémenté. Toute évolution (nouvelle fonctionnalité, changement de schéma Firestore, nouveau rôle, nouvelle convention) doit mettre à jour ce fichier.
@@ -158,8 +158,9 @@ Résultat :
 - Login email + mot de passe. Après succès, vérification `isCurrentUserAdmin()` : si false, message d’erreur (compte Firebase Auth sans rôle admin).
 - Écran de modération :
   - liste des soumissions `pending`, plus récentes en premier ;
-  - aperçu du payload (métadonnées + paroles réordonnées) ;
   - distinction create / update ;
+  - aperçu create : payload proposé (métadonnées + paroles `sectionsForDisplay`) ;
+  - aperçu update : **diff** champ par champ (`SongDiff`) entre le chant publié et la proposition (métadonnées barrées / nouvelles, paroles actuel vs proposé) ;
   - actions Approuver / Rejeter ;
   - bouton déconnexion.
 
@@ -261,7 +262,7 @@ Conséquence : on peut tester un contrôleur avec `mocktail` sans Firestore, et 
 
 ### 6.3 Principes SOLID appliqués
 
-- **S** — `SongFilterService` ne fait que filtrer/scorer ; `SongNumberComparator` ne trie que des numéros ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
+- **S** — `SongFilterService` ne fait que filtrer/scorer ; `SongNumberComparator` ne trie que des numéros ; `SongDiff` ne compare que deux `Song` ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
 - **O** — nouveaux `SearchScope` via le `switch` du scorer (évolution localisée).
 - **L** — les `*Impl` sont substituables aux contrats.
 - **I** — contrats étroits (`FavoriteRepository` ≠ `SongRepository`).
@@ -528,7 +529,7 @@ isAdmin     ⇔ signed in
 
 | Chemin | Read | Write |
 | --- | --- | --- |
-| `songs/{id}` | authentifié | create : admin **et** `status == approved` ; update/delete : admin |
+| `songs/{id}` | admin **ou** (authentifié **et** `status == approved`) | create : admin **et** `status == approved` ; update/delete : admin |
 | `song_submissions/{id}` | admin **ou** auteur (`createdBy == uid`) | create : authentifié, `status == pending`, `createdBy == uid`, type create/update, clés obligatoires ; update : admin et status ∈ approved/rejected/pending ; delete : admin |
 | `users/{userId}/favorites/{songId}` | `uid == userId` | idem |
 | `config/admins` | authentifié | **interdit** |
@@ -538,6 +539,7 @@ isAdmin     ⇔ signed in
 Implications :
 
 - Un fidèle **ne peut pas** créer un chant public, même en forgeant un client.
+- Un fidèle **ne peut pas** lire un document `songs` non `approved` (query catalogue `status == approved` compatible).
 - Un fidèle **ne peut pas** s’auto-promouvoir admin depuis l’app.
 - Un fidèle ne voit pas les soumissions des autres.
 - `isAdmin()` côté rules exige un **e-mail** sur le token : un anonyme ne matchera jamais.
@@ -686,7 +688,7 @@ Détail : paroles via `ListView.builder` (`sectionsForDisplay`).
 - **Small / medium** : `NavigationBar` 3 destinations (Chants, Favoris, Ajouter).
 - **Large+** (`useNavigationRail`) : `NavigationRail` + divider + contenu.
 
-Pas de garde de route GoRouter sur `/admin` : la protection réelle est Firestore. Un non-admin qui ouvre `/admin` verra une file vide / des erreurs de permission sur le stream.
+Garde GoRouter (`adminRedirect`) : `/admin` → `/admin/login` si le rôle est résolu et n’est pas admin ; `/admin/login` → `/admin` si déjà admin. Pendant le chargement du rôle, pas de redirect. La protection réelle des données reste Firestore.
 
 ### 14.3 Widgets clés (songs)
 
@@ -814,12 +816,12 @@ Pas de thème sombre livré.
 
 ## 19. Tests
 
-Emplacement : `test/`, miroir de `lib/`. **129** tests unitaires, `flutter analyze` clean.
+Emplacement : `test/`, miroir de `lib/`. Tests unitaires (voir `flutter test`), `flutter analyze` clean.
 
 | Zone | Outil | Ce qui est couvert |
 | --- | --- | --- |
 | Entités | pur Dart | enums `fromString`, `copyWith`, `sectionsForDisplay`, `isPending` |
-| Services | pur Dart | accents, scopes, ranking, favoris, tri naturel numéros |
+| Services | pur Dart | accents, scopes, ranking, favoris, tri naturel numéros, diff de chant, redirect admin |
 | Mappers | pur Dart | round-trip Firestore maps, défauts, `buildSearchText`, `includeSections` |
 | Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved (query `where`), catalogue sans paroles, cache-first `getById`, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
 | Repositories | `mocktail` | délégation + toggle favori |
@@ -895,18 +897,17 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 ## 22. Contraintes, limites et dettes connues
 
 1. **Favoris liés à l’anonyme** — perte à la réinstallation ; logout admin recrée un uid.  
-2. **Pas de garde de route `/admin`** — sécurité réelle = rules.  
-3. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
-4. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
-5. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
-6. **Clés l10n mortes** — listes de culte / verset du jour.  
-7. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
-8. **iOS non distribué** — besoin compte développeur Apple.  
-9. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
-10. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
-11. **Pas de CI** dans le dépôt au moment de cette spec.  
-12. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
-13. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
+2. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
+3. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
+4. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
+5. **Clés l10n mortes** — listes de culte / verset du jour.  
+6. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
+7. **iOS non distribué** — besoin compte développeur Apple.  
+8. **E-mail admin bootstrap en dur** dans le client **et** les rules — `config/admins` et `admins/{uid}` sont vides en prod ; le fallback `moiseraidjy@gmail.com` reste le seul chemin admin. À migrer vers la console avant de retirer le fallback.  
+9. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
+10. **Pas de CI** dans le dépôt au moment de cette spec.  
+11. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
+12. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
 
 ---
 
@@ -917,7 +918,6 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 - Comptes fidèles (email / Google) pour survivre à la réinstall des favoris.
 - Listes de culte (clés l10n déjà présentes).
 - Pagination du catalogue / collection métadonnées séparée des paroles, pour réduire le trafic réseau.
-- Garde GoRouter `redirect` sur `/admin`.
 - Play Store / TestFlight.
 - Thème sombre.
 - Tests widget / golden des écrans critiques.
