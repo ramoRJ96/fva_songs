@@ -1,6 +1,6 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.7  
+**Version du document :** 1.8  
 **Version de l’application :** 0.1.2+3  
 **Date :** 20 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
@@ -310,6 +310,7 @@ lib/
 
 test/                              # miroir de lib/ (unitaires)
 .github/workflows/ci.yml           # GitHub Actions : analyze + test
+.github/workflows/cd.yml           # GitHub Actions : APK signé + Hosting / rules
 scripts/                           # import fihirana (Python + JSON)
 hosting/                           # landing APK (index.html, analytics-config.js, icône, .bin gitignoré)
 firestore.rules
@@ -832,7 +833,7 @@ Non couvert (volontairement, hors unitaires) : tests de widgets/golden, tests d�
 
 Commande : `flutter test`
 
-CI : GitHub Actions (voir §20.5).
+CI : GitHub Actions (voir §20.5). CD : voir §20.6.
 
 ---
 
@@ -896,7 +897,40 @@ Job unique (`ubuntu-latest`) :
 
 SDK CI : Flutter **3.41.0** (channel `stable`) — `pubspec.lock` exige Dart ≥ 3.11 / Flutter ≥ 3.41 à cause de `wakelock_plus` 1.7.
 
-**Pas de CD automatique** : le keystore Android et les tokens Firebase restent hors du dépôt. Build APK, copie `hosting/fva-songs.bin`, `firebase deploy --only hosting` et `firebase deploy --only firestore:rules` restent manuels (voir §20.2–20.3).
+Le CD (§20.6) n’est **pas** déclenché par un push : CI et CD sont des workflows distincts.
+
+### 20.6 CD (GitHub Actions)
+
+Fichier : `.github/workflows/cd.yml`.
+
+**Déclenchement** (volontaire, pas à chaque push) :
+
+- **Run workflow** depuis l’onglet Actions (`workflow_dispatch`), avec option `deploy_rules` (défaut : oui).
+- Publication d’une **GitHub Release** (`release: published`) — déploie toujours Hosting **et** `firestore.rules`.
+
+Le job déploie le **ref Git choisi** (branche ou tag). Pour la prod, lancer depuis `main` après un CI vert. Les rules Firestore déployées sont celles du ref : une branche plus ancienne peut écraser une policy plus stricte déjà en prod.
+
+Job unique (`ubuntu-latest`), Flutter **3.41.0**, JDK 17 :
+
+1. Vérifier que les secrets GitHub sont présents (sinon échec explicite).
+2. Décoder le keystore et écrire `android/key.properties` **uniquement sur le runner** (jamais commités).
+3. `flutter build apk --release` (signature release, pas le fallback debug).
+4. Copier l’APK vers `hosting/fva-songs.bin` (contournement Spark, §20.3).
+5. Mettre à jour la chaîne « Version x.y.z » de `hosting/index.html` d’après `pubspec.yaml` (uniquement sur le runner).
+6. Publier l’APK en artifact GitHub Actions (`fva-songs-apk`).
+7. `firebase deploy --only hosting` et, si demandé, `firestore:rules`, projet `fvasongs-d8055`.
+
+**Secrets GitHub** (Settings → Secrets and variables → Actions) — jamais dans git :
+
+| Secret | Contenu |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Keystore JKS encodé (`base64 -i android/keystore/fva_songs_release.jks`) |
+| `ANDROID_STORE_PASSWORD` | `storePassword` de `android/key.properties` |
+| `ANDROID_KEY_PASSWORD` | `keyPassword` |
+| `ANDROID_KEY_ALIAS` | `keyAlias` |
+| `FIREBASE_TOKEN` | Token CI (`firebase login:ci`) |
+
+Le build local (`flutter build apk --release` + copie + `firebase deploy`) reste possible sans Actions.
 
 ---
 
@@ -924,7 +958,7 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 8. **iOS non distribué** — besoin compte développeur Apple.  
 9. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
 10. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
-11. **Pas de CD** — APK / Hosting / rules Firestore se déploient encore à la main (keystore et tokens hors git).  
+11. **CD manuel** — le workflow CD existe mais ne part pas tout seul : secrets GitHub à renseigner, puis `workflow_dispatch` ou GitHub Release.  
 12. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
 13. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
 
@@ -942,7 +976,6 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 - Thème sombre.
 - Tests widget / golden des écrans critiques.
 - Split APKs (armeabi-v7a / arm64) pour réduire le poids du téléchargement.
-- CD : build APK signé + deploy Hosting / rules depuis Actions (secrets GitHub).
 
 Toute évolution de schéma Firestore **doit** mettre à jour : ce document, `firestore.rules`, les mappers, et les tests de datasource.
 
