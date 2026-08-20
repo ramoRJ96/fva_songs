@@ -59,7 +59,7 @@ flutter build apk --release
 
 ## Distribution
 
-Android APK is stored as `hosting/fva-songs.bin` (Spark blocks uploading `.apk`) but **served at `/fva-songs.apk`** via Hosting rewrite (Android names the file from the URL). After a release build: copy the APK to `hosting/fva-songs.bin`, bump `pubspec.yaml` versionCode if users must overwrite the previous install, update the landing version string, deploy `--only hosting`, and reflect the version in `spec.md`.
+Android APK is stored as `hosting/fva-songs.bin` (Spark blocks uploading `.apk`) but **served at `/fva-songs.apk`** via Hosting rewrite (Android names the file from the URL). After a release build: copy the APK to `hosting/fva-songs.bin`, bump `pubspec.yaml` versionCode if users must overwrite the previous install, update the landing version string, deploy `--only hosting`, and reflect the version in `spec.md`. The CD workflow (`.github/workflows/cd.yml`, spec §20.6) does the same from GitHub Actions; it needs repository secrets and a manual `workflow_dispatch` (or a GitHub Release). Never put keystore passwords or `FIREBASE_TOKEN` in git.
 
 ## Language
 
