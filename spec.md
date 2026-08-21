@@ -1,7 +1,7 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.13  
-**Version de l’application :** 0.1.3+4  
+**Version du document :** 1.14  
+**Version de l’application :** 0.1.3+5  
 **Date :** 21 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
@@ -174,7 +174,7 @@ Résultat :
 
 - Icône info dans l’AppBar de la liste → `/about` (`AboutScreen`).
 - Présentation de Moïse (développeur, 6 ans d’expérience) et du motif de l’app (retrouver un chant et la tonalité de référence pour les musiciens de l’église).
-- L’app est gratuite ; un don passe par contact e-mail `moiseraidjy@gmail.com` (`mailto`, `url_launcher`).
+- L’app est gratuite ; un don passe par e-mail `moiseraidjy@gmail.com` (`mailto`) ou WhatsApp `034 25 228 31` (`https://wa.me/261342522831`, `url_launcher`).
 - Version affichée via `package_info_plus`.
 - Copy 100 % l10n FR/MG.
 
@@ -859,8 +859,8 @@ CI : GitHub Actions (voir §20.5). CD : voir §20.6.
 
 ### 20.1 Versioning
 
-`pubspec.yaml` : `version: 0.1.3+4`  
-→ `versionName` 0.1.3, `versionCode` 4 (nécessaire pour réinstaller par-dessus l’APK précédent).
+`pubspec.yaml` : `version: 0.1.3+5`  
+→ `versionName` 0.1.3, `versionCode` 5 (nécessaire pour réinstaller par-dessus l’APK précédent).
 
 ### 20.2 Signature Android
 

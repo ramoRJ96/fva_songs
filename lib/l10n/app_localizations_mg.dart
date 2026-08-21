@@ -374,6 +374,9 @@ class AppLocalizationsMg extends AppLocalizations {
   String get aboutContactEmail => 'moiseraidjy@gmail.com';
 
   @override
+  String get aboutContactWhatsApp => 'WhatsApp · 034 25 228 31';
+
+  @override
   String aboutVersion(String version) {
     return 'Dika $version';
   }

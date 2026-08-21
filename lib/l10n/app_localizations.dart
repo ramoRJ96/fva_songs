@@ -788,6 +788,12 @@ abstract class AppLocalizations {
   /// **'moiseraidjy@gmail.com'**
   String get aboutContactEmail;
 
+  /// No description provided for @aboutContactWhatsApp.
+  ///
+  /// In fr, this message translates to:
+  /// **'WhatsApp · 034 25 228 31'**
+  String get aboutContactWhatsApp;
+
   /// No description provided for @aboutVersion.
   ///
   /// In fr, this message translates to:

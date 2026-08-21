@@ -135,6 +135,7 @@
   "aboutDonateTitle": "SOUTENIR",
   "aboutDonateBody": "L'application est gratuite. Pour un don, contactez-moi :",
   "aboutContactEmail": "moiseraidjy@gmail.com",
+  "aboutContactWhatsApp": "WhatsApp · 034 25 228 31",
   "aboutVersion": "Version {version}",
   "@aboutVersion": {
     "placeholders": {

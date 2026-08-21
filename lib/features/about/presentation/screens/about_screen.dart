@@ -21,6 +21,11 @@ class AboutScreen extends StatelessWidget {
     await launchUrl(uri);
   }
 
+  Future<void> _openWhatsApp() async {
+    final uri = Uri.parse('https://wa.me/261342522831');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -91,6 +96,14 @@ class AboutScreen extends StatelessWidget {
                 onPressed: () => _openMail(l10n.aboutContactEmail),
                 icon: const Icon(Icons.mail_outline),
                 label: Text(l10n.aboutContactEmail),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _openWhatsApp,
+                icon: const Icon(Icons.chat_outlined),
+                label: Text(l10n.aboutContactWhatsApp),
               ),
             ),
             const SizedBox(height: 32),
