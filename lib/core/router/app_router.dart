@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/about/presentation/screens/about_screen.dart';
 import '../../features/add_song/presentation/screens/add_song_screen.dart';
 import '../../features/add_song/presentation/screens/my_submissions_screen.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
@@ -90,6 +91,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id'] ?? '';
           return _EditSongRoute(songId: id);
         },
+      ),
+      GoRoute(
+        path: '/about',
+        name: 'about',
+        builder: (context, state) => const AboutScreen(),
       ),
       GoRoute(
         path: '/submissions',

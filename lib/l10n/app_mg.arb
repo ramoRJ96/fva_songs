@@ -127,5 +127,18 @@
     }
   },
   "updateDownloadButton": "Alaivo",
-  "updateLaterButton": "Tsy izao"
+  "updateLaterButton": "Tsy izao",
+  "aboutTitle": "Momba",
+  "aboutAuthorName": "Moïse",
+  "aboutAuthorRole": "Mpamorona · traikefa 6 taona",
+  "aboutBody": "Namorona an'i FVA Songs aho mba hanampy ny fiangonanay hahita haingana ny hira, ary koa ny feo iraisana ho an'ny mpitendry rehetra.",
+  "aboutDonateTitle": "FANOHANANA",
+  "aboutDonateBody": "Maimaim-poana ny rindranasa. Raha te-hanome, mifandraisa amiko :",
+  "aboutContactEmail": "moiseraidjy@gmail.com",
+  "aboutVersion": "Dika {version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  }
 }

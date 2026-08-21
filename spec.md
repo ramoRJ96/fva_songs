@@ -1,7 +1,7 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.12  
-**Version de l’application :** 0.1.2+3  
+**Version du document :** 1.13  
+**Version de l’application :** 0.1.3+4  
 **Date :** 21 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
@@ -170,7 +170,15 @@ Résultat :
 - Persistance `SharedPreferences` clé `app_locale_code`.
 - Défaut : français. Code inconnu → français.
 
-### 3.9 Hors périmètre actuel (non implémenté)
+### 3.9 À propos
+
+- Icône info dans l’AppBar de la liste → `/about` (`AboutScreen`).
+- Présentation de Moïse (développeur, 6 ans d’expérience) et du motif de l’app (retrouver un chant et la tonalité de référence pour les musiciens de l’église).
+- L’app est gratuite ; un don passe par contact e-mail `moiseraidjy@gmail.com` (`mailto`, `url_launcher`).
+- Version affichée via `package_info_plus`.
+- Copy 100 % l10n FR/MG.
+
+### 3.10 Hors périmètre actuel (non implémenté)
 
 **Les listes de culte** et le **verset du jour** ne sont pas des fonctionnalités livrées.
 
@@ -302,6 +310,7 @@ lib/
 │   └── theme/app_colors.dart, app_theme.dart
 └── features/
     ├── add_song/presentation/     # formulaire + widgets éditeur
+    ├── about/presentation/        # écran À propos
     ├── auth/                      # domain / data / presentation complets
     ├── favorites/presentation/    # écran + item
     ├── moderation/presentation/   # file admin
@@ -312,7 +321,7 @@ lib/
 
 test/                              # miroir de lib/ (unitaires)
 .github/workflows/ci.yml           # GitHub Actions : analyze + test
-.github/workflows/cd.yml           # GitHub Actions : APK signé + Hosting / rules (manuel)
+.github/workflows/cd.yml           # GitHub Actions : APK signé + Hosting / rules (après CI vert sur main)
 scripts/ci/                        # prepare hosting (+ bump versionCode optionnel)
 scripts/                           # import fihirana (Python + JSON)
 hosting/                           # landing, app-version.json, analytics-config.js, .bin gitignoré
@@ -679,6 +688,7 @@ La recherche **ne interroge pas** Firestore : elle opère sur le snapshot déjà
 | `/add` | `add-song` | `AddSongScreen` | oui |
 | `/song/:id` | `song-detail` | `SongDetailScreen` | non |
 | `/edit/:id` | `edit-song` | `AddSongScreen(editingSong:)` | non |
+| `/about` | `about` | `AboutScreen` | non |
 | `/submissions` | `my-submissions` | `MySubmissionsScreen` | non |
 | `/admin/login` | `admin-login` | `AdminLoginScreen` | non |
 | `/admin` | `admin-moderation` | `ModerationScreen` | non |
@@ -849,8 +859,8 @@ CI : GitHub Actions (voir §20.5). CD : voir §20.6.
 
 ### 20.1 Versioning
 
-`pubspec.yaml` : `version: 0.1.2+3`  
-→ `versionName` 0.1.2, `versionCode` 3 (nécessaire pour réinstaller par-dessus l’APK précédent).
+`pubspec.yaml` : `version: 0.1.3+4`  
+→ `versionName` 0.1.3, `versionCode` 4 (nécessaire pour réinstaller par-dessus l’APK précédent).
 
 ### 20.2 Signature Android
 
@@ -1005,7 +1015,7 @@ Mesure d’usage via **Google Analytics 4**, lié au projet Firebase `fvasongs-d
 ### 24.1 Architecture app
 
 - **`AnalyticsClient`** — contrat Dart pur ; **`FirebaseAnalyticsClient`** en prod ; **`NoOpAnalyticsClient`** par défaut dans les tests unitaires des contrôleurs.
-- **`AnalyticsRouteObserver`** — enregistre un `screen_view` à chaque route GoRouter nommée (`songs`, `favorites`, `song-detail`, etc.).
+- **`AnalyticsRouteObserver`** — enregistre un `screen_view` à chaque route GoRouter nommée (`songs`, `favorites`, `about`, `song-detail`, etc.).
 - Injection Riverpod : `analyticsClientProvider`.
 
 ### 24.2 Événements custom (app)

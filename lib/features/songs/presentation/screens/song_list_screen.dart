@@ -68,6 +68,14 @@ class _SongsAppBar extends ConsumerWidget {
       centerTitle: true,
       actions: [
         IconButton(
+          tooltip: l10n.aboutTitle,
+          icon: const Icon(
+            Icons.info_outline,
+            color: AppColors.primary,
+          ),
+          onPressed: () => context.push('/about'),
+        ),
+        IconButton(
           tooltip: l10n.switchLanguage,
           icon: Text(
             ref.watch(localeControllerProvider).languageCode.toUpperCase(),

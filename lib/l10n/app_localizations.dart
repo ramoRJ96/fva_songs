@@ -745,6 +745,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plus tard'**
   String get updateLaterButton;
+
+  /// No description provided for @aboutTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos'**
+  String get aboutTitle;
+
+  /// No description provided for @aboutAuthorName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moïse'**
+  String get aboutAuthorName;
+
+  /// No description provided for @aboutAuthorRole.
+  ///
+  /// In fr, this message translates to:
+  /// **'Développeur · 6 ans d\'expérience'**
+  String get aboutAuthorRole;
+
+  /// No description provided for @aboutBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai créé FVA Songs pour aider notre église à retrouver rapidement un chant, ainsi que la tonalité de référence pour tous les musiciens.'**
+  String get aboutBody;
+
+  /// No description provided for @aboutDonateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOUTENIR'**
+  String get aboutDonateTitle;
+
+  /// No description provided for @aboutDonateBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'application est gratuite. Pour un don, contactez-moi :'**
+  String get aboutDonateBody;
+
+  /// No description provided for @aboutContactEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'moiseraidjy@gmail.com'**
+  String get aboutContactEmail;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version {version}'**
+  String aboutVersion(String version);
 }
 
 class _AppLocalizationsDelegate

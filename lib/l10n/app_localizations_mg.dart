@@ -349,4 +349,32 @@ class AppLocalizationsMg extends AppLocalizations {
 
   @override
   String get updateLaterButton => 'Tsy izao';
+
+  @override
+  String get aboutTitle => 'Momba';
+
+  @override
+  String get aboutAuthorName => 'Moïse';
+
+  @override
+  String get aboutAuthorRole => 'Mpamorona · traikefa 6 taona';
+
+  @override
+  String get aboutBody =>
+      'Namorona an\'i FVA Songs aho mba hanampy ny fiangonanay hahita haingana ny hira, ary koa ny feo iraisana ho an\'ny mpitendry rehetra.';
+
+  @override
+  String get aboutDonateTitle => 'FANOHANANA';
+
+  @override
+  String get aboutDonateBody =>
+      'Maimaim-poana ny rindranasa. Raha te-hanome, mifandraisa amiko :';
+
+  @override
+  String get aboutContactEmail => 'moiseraidjy@gmail.com';
+
+  @override
+  String aboutVersion(String version) {
+    return 'Dika $version';
+  }
 }

@@ -127,5 +127,18 @@
     }
   },
   "updateDownloadButton": "Télécharger",
-  "updateLaterButton": "Plus tard"
+  "updateLaterButton": "Plus tard",
+  "aboutTitle": "À propos",
+  "aboutAuthorName": "Moïse",
+  "aboutAuthorRole": "Développeur · 6 ans d'expérience",
+  "aboutBody": "J'ai créé FVA Songs pour aider notre église à retrouver rapidement un chant, ainsi que la tonalité de référence pour tous les musiciens.",
+  "aboutDonateTitle": "SOUTENIR",
+  "aboutDonateBody": "L'application est gratuite. Pour un don, contactez-moi :",
+  "aboutContactEmail": "moiseraidjy@gmail.com",
+  "aboutVersion": "Version {version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  }
 }

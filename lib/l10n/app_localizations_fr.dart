@@ -351,4 +351,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get updateLaterButton => 'Plus tard';
+
+  @override
+  String get aboutTitle => 'À propos';
+
+  @override
+  String get aboutAuthorName => 'Moïse';
+
+  @override
+  String get aboutAuthorRole => 'Développeur · 6 ans d\'expérience';
+
+  @override
+  String get aboutBody =>
+      'J\'ai créé FVA Songs pour aider notre église à retrouver rapidement un chant, ainsi que la tonalité de référence pour tous les musiciens.';
+
+  @override
+  String get aboutDonateTitle => 'SOUTENIR';
+
+  @override
+  String get aboutDonateBody =>
+      'L\'application est gratuite. Pour un don, contactez-moi :';
+
+  @override
+  String get aboutContactEmail => 'moiseraidjy@gmail.com';
+
+  @override
+  String aboutVersion(String version) {
+    return 'Version $version';
+  }
 }

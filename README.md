@@ -27,6 +27,7 @@ A cross-platform Flutter app for browsing, searching, and contributing worship s
 - **Favorites** — Mark songs as favorites and access them from a dedicated tab.
 - **Community contributions** — Any signed-in user can submit a new song or propose an edit to an existing one.
 - **Admin moderation** — An administrator signs in with email/password and reviews every pending submission (create or update) before it is published. Regular users' submissions never go live automatically.
+- **About** — Author note, donation contact, and app version, from the catalog app bar.
 - **Bilingual UI** — Fully localized in French and Malagasy, switchable from the app bar.
 - **Responsive layout** — Adapts from mobile to tablet/desktop (bottom navigation bar vs. navigation rail, grid columns, paddings).
 - **Custom branding** — Dedicated app icon and native splash screen for Android and iOS.
@@ -66,6 +67,7 @@ lib/
 │   └── theme/                # Colors & text styles
 ├── features/
 │   ├── add_song/             # Song creation/edit form
+│   ├── about/                # About screen
 │   ├── auth/                 # Admin authentication (domain/data/presentation)
 │   ├── favorites/             # Favorites screen & widgets
 │   ├── moderation/            # Admin moderation queue screen
