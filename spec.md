@@ -1,6 +1,6 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.7  
+**Version du document :** 1.8  
 **Version de l’application :** 0.1.2+3  
 **Date :** 20 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
@@ -38,7 +38,6 @@ Les agents IA **lisent ce fichier avant toute modification** et le tiennent à j
 22. [Contraintes, limites et dettes connues](#22-contraintes-limites-et-dettes-connues)
 23. [Évolutions envisagées](#23-évolutions-envisagées)
 24. [Analytics (GA4)](#24-analytics-ga4)
-25. [CI/CD et mises à jour Android](#25-cicd-et-mises-à-jour-android)
 
 ---
 
@@ -159,8 +158,9 @@ Résultat :
 - Login email + mot de passe. Après succès, vérification `isCurrentUserAdmin()` : si false, message d’erreur (compte Firebase Auth sans rôle admin).
 - Écran de modération :
   - liste des soumissions `pending`, plus récentes en premier ;
-  - aperçu du payload (métadonnées + paroles réordonnées) ;
   - distinction create / update ;
+  - aperçu create : payload proposé (métadonnées + paroles `sectionsForDisplay`) ;
+  - aperçu update : **diff** champ par champ (`SongDiff`) entre le chant publié et la proposition (métadonnées barrées / nouvelles, paroles actuel vs proposé) ;
   - actions Approuver / Rejeter ;
   - bouton déconnexion.
 
@@ -262,7 +262,7 @@ Conséquence : on peut tester un contrôleur avec `mocktail` sans Firestore, et 
 
 ### 6.3 Principes SOLID appliqués
 
-- **S** — `SongFilterService` ne fait que filtrer/scorer ; `SongNumberComparator` ne trie que des numéros ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
+- **S** — `SongFilterService` ne fait que filtrer/scorer ; `SongNumberComparator` ne trie que des numéros ; `SongDiff` ne compare que deux `Song` ; `TextNormalizer` ne normalise que du texte ; `LocaleController` ne gère que la langue ; les datasources n’exposent pas de règles UI.
 - **O** — nouveaux `SearchScope` via le `switch` du scorer (évolution localisée).
 - **L** — les `*Impl` sont substituables aux contrats.
 - **I** — contrats étroits (`FavoriteRepository` ≠ `SongRepository`).
@@ -298,7 +298,7 @@ lib/
 │   ├── updates/                   # Vérification mise à jour APK (app-version.json)
 │   ├── l10n/locale_controller.dart, fallback_localizations.dart
 │   ├── responsiveness/            # breakpoints, configs, extensions
-│   ├── router/app_router.dart
+│   ├── router/app_router.dart, admin_redirect.dart
 │   └── theme/app_colors.dart, app_theme.dart
 └── features/
     ├── add_song/presentation/     # formulaire + widgets éditeur
@@ -311,10 +311,12 @@ lib/
         └── presentation/providers, screens, widgets
 
 test/                              # miroir de lib/ (unitaires)
+.github/workflows/ci.yml           # GitHub Actions : analyze + test
+.github/workflows/cd.yml           # GitHub Actions : APK signé + Hosting / rules (manuel)
+.github/workflows/release-android.yml  # Release auto sur push main (optionnel)
+scripts/ci/                        # bump versionCode, prepare hosting
 scripts/                           # import fihirana (Python + JSON)
 hosting/                           # landing, app-version.json, analytics-config.js, .bin gitignoré
-.github/workflows/                 # CI + release Android
-scripts/ci/                        # bump version, prepare hosting
 firestore.rules
 firestore.indexes.json
 firebase.json
@@ -532,7 +534,7 @@ isAdmin     ⇔ signed in
 
 | Chemin | Read | Write |
 | --- | --- | --- |
-| `songs/{id}` | authentifié | create : admin **et** `status == approved` ; update/delete : admin |
+| `songs/{id}` | admin **ou** (authentifié **et** `status == approved`) | create : admin **et** `status == approved` ; update/delete : admin |
 | `song_submissions/{id}` | admin **ou** auteur (`createdBy == uid`) | create : authentifié, `status == pending`, `createdBy == uid`, type create/update, clés obligatoires ; update : admin et status ∈ approved/rejected/pending ; delete : admin |
 | `users/{userId}/favorites/{songId}` | `uid == userId` | idem |
 | `config/admins` | authentifié | **interdit** |
@@ -542,6 +544,7 @@ isAdmin     ⇔ signed in
 Implications :
 
 - Un fidèle **ne peut pas** créer un chant public, même en forgeant un client.
+- Un fidèle **ne peut pas** lire un document `songs` non `approved` (query catalogue `status == approved` compatible).
 - Un fidèle **ne peut pas** s’auto-promouvoir admin depuis l’app.
 - Un fidèle ne voit pas les soumissions des autres.
 - `isAdmin()` côté rules exige un **e-mail** sur le token : un anonyme ne matchera jamais.
@@ -690,7 +693,7 @@ Détail : paroles via `ListView.builder` (`sectionsForDisplay`).
 - **Small / medium** : `NavigationBar` 3 destinations (Chants, Favoris, Ajouter).
 - **Large+** (`useNavigationRail`) : `NavigationRail` + divider + contenu.
 
-Pas de garde de route GoRouter sur `/admin` : la protection réelle est Firestore. Un non-admin qui ouvre `/admin` verra une file vide / des erreurs de permission sur le stream.
+Garde GoRouter (`adminRedirect`) : `/admin` → `/admin/login` si le rôle est résolu et n’est pas admin ; `/admin/login` → `/admin` si déjà admin. Pendant le chargement du rôle, pas de redirect. La protection réelle des données reste Firestore.
 
 ### 14.3 Widgets clés (songs)
 
@@ -818,12 +821,12 @@ Pas de thème sombre livré.
 
 ## 19. Tests
 
-Emplacement : `test/`, miroir de `lib/`. **129** tests unitaires, `flutter analyze` clean.
+Emplacement : `test/`, miroir de `lib/`. Tests unitaires (voir `flutter test`), `flutter analyze` clean.
 
 | Zone | Outil | Ce qui est couvert |
 | --- | --- | --- |
 | Entités | pur Dart | enums `fromString`, `copyWith`, `sectionsForDisplay`, `isPending` |
-| Services | pur Dart | accents, scopes, ranking, favoris, tri naturel numéros |
+| Services | pur Dart | accents, scopes, ranking, favoris, tri naturel numéros, diff de chant, redirect admin |
 | Mappers | pur Dart | round-trip Firestore maps, défauts, `buildSearchText`, `includeSections` |
 | Datasources | `FakeFirebaseFirestore`, `MockFirebaseAuth` | filtre approved (query `where`), catalogue sans paroles, cache-first `getById`, CRUD songs, favoris, soumissions, approve/reject, rôle admin |
 | Repositories | `mocktail` | délégation + toggle favori |
@@ -835,14 +838,16 @@ Non couvert (volontairement, hors unitaires) : tests de widgets/golden, tests d�
 
 Commande : `flutter test`
 
+CI : GitHub Actions (voir §20.5). CD : voir §20.6.
+
 ---
 
 ## 20. Build, signature et distribution
 
 ### 20.1 Versioning
 
-`pubspec.yaml` : `version: X.Y.Z+N`  
-→ `versionName` = `X.Y.Z`, `versionCode` = `N` (entier Android). **Incrémenter `N` à chaque release** pour permettre l’installation par-dessus l’APK existant (même clé de signature, sans désinstallation).
+`pubspec.yaml` : `version: 0.1.2+3`  
+→ `versionName` 0.1.1, `versionCode` 2 (nécessaire pour réinstaller par-dessus l’APK précédent).
 
 ### 20.2 Signature Android
 
@@ -871,46 +876,73 @@ Procédure :
 4. Headers sur `/fva-songs.apk` : `Content-Type: application/vnd.android.package-archive`, `Content-Disposition: attachment; filename="fva-songs.apk"`, `Cache-Control: no-cache`.
 5. Landing : bouton `href="fva-songs.apk"`.
 6. **Analytics landing** : renseigner `hosting/analytics-config.js` avec le Measurement ID GA4 (`G-…`) du flux Web Firebase, puis `firebase deploy --only hosting`.
-7. `firebase deploy --only hosting` (ou laisser GitHub Actions le faire — voir §25).
-
-### 20.4 Mise à jour in-app (hors Play Store)
-
-- Fichier public `hosting/app-version.json` : `versionName`, `versionCode`, `downloadUrl`.
-- Au démarrage, l’app compare le `versionCode` local (`package_info_plus`) au manifeste Hosting.
-- Si une version plus récente existe → dialogue FR/MG avec lien vers `/fva-songs.apk`.
-- **Installation par-dessus** : Android remplace l’app si le `versionCode` est supérieur et la **même clé de signature** est utilisée (pas de désinstallation, favoris locaux Auth/Firestore conservés).
-
-### 20.5 CI/CD GitHub Actions
-
-Workflows dans `.github/workflows/` :
-
-| Workflow | Déclencheur | Rôle |
-| --- | --- | --- |
-| `ci.yml` | PR / push `main` | `flutter analyze` + `flutter test` |
-| `release-android.yml` | push `main` (sauf `[skip release]`) ou manuel | bump `versionCode`, build APK signé, `hosting/*`, deploy Hosting, commit `[skip release]` |
-
-Scripts : `scripts/ci/bump_build_number.sh`, `scripts/ci/prepare_hosting_release.sh`.
-
-**Secrets GitHub** (Settings → Secrets → Actions) :
-
-| Secret | Contenu |
-| --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | Keystore JKS encodé base64 (`base64 -w0 fva_songs_release.jks`) |
-| `ANDROID_KEY_ALIAS` | Alias de la clé |
-| `ANDROID_KEY_PASSWORD` | Mot de passe clé |
-| `ANDROID_STORE_PASSWORD` | Mot de passe keystore |
-| `FIREBASE_TOKEN` | `firebase login:ci` (compte avec droits Hosting sur `fvasongs-d8055`) |
-
-Après configuration des secrets, chaque merge sur `main` peut publier automatiquement un nouvel APK.
+7. `firebase deploy --only hosting`
 
 **URL :** https://fvasongs-d8055.web.app  
 **Console :** https://console.firebase.google.com/project/fvasongs-d8055/overview
 
 iOS : `flutter build ipa` + Apple Developer Program — **non livré**.
 
-### 20.4 Firebase Auth (console)
+### 20.4 Mise à jour in-app (hors Play Store)
+
+- Fichier public `hosting/app-version.json` : `versionName`, `versionCode`, `downloadUrl` (`Cache-Control: no-cache` dans `firebase.json`).
+- Au démarrage, `AppUpdateListener` compare le `versionCode` local (`package_info_plus`) au manifeste Hosting (`lib/core/updates/`).
+- Si une version plus récente existe → dialogue FR/MG avec lien vers `/fva-songs.apk` (`url_launcher`).
+- **Installation par-dessus** : Android remplace l’app si le `versionCode` est supérieur et la **même clé de signature** est utilisée.
+
+### 20.5 Firebase Auth (console)
 
 Providers activés : Anonymous, Email/Password (`firebase.json` section `auth` documentaire + console).
+
+### 20.6 CI (GitHub Actions)
+
+Fichier : `.github/workflows/ci.yml`.
+
+Déclenchement : chaque **pull request**, chaque **push** sur `main`, et chaque **push** sur `feature/**`.
+
+Job unique (`ubuntu-latest`) :
+
+1. `flutter pub get`
+2. `flutter gen-l10n` puis `git diff --exit-code lib/l10n/` (les `.dart` générés doivent être commités)
+3. `flutter analyze`
+4. `flutter test`
+
+SDK CI : Flutter **3.41.0** (channel `stable`) — `pubspec.lock` exige Dart ≥ 3.11 / Flutter ≥ 3.41 à cause de `wakelock_plus` 1.7.
+
+Le CD (§20.7) n’est **pas** déclenché par un push : CI et CD sont des workflows distincts.
+
+### 20.7 CD (GitHub Actions)
+
+Fichier : `.github/workflows/cd.yml`.
+
+**Déclenchement** (volontaire, pas à chaque push) :
+
+- **Run workflow** depuis l’onglet Actions (`workflow_dispatch`), avec option `deploy_rules` (défaut : oui).
+- Publication d’une **GitHub Release** (`release: published`) — déploie toujours Hosting **et** `firestore.rules`.
+
+Le job déploie le **ref Git choisi** (branche ou tag). Pour la prod, lancer depuis `main` après un CI vert. Les rules Firestore déployées sont celles du ref : une branche plus ancienne peut écraser une policy plus stricte déjà en prod.
+
+Job unique (`ubuntu-latest`), Flutter **3.41.0**, JDK 17 :
+
+1. Vérifier que les secrets GitHub sont présents (sinon échec explicite).
+2. Décoder le keystore et écrire `android/key.properties` **uniquement sur le runner** (jamais commités).
+3. `flutter build apk --release` (signature release, pas le fallback debug).
+4. Copier l’APK vers `hosting/fva-songs.bin` et générer `hosting/app-version.json` (`scripts/ci/prepare_hosting_release.sh`).
+5. Mettre à jour la chaîne « Version x.y.z » de `hosting/index.html` d’après `pubspec.yaml` (via le script ci-dessus).
+6. Publier l’APK en artifact GitHub Actions (`fva-songs-apk`).
+7. `firebase deploy --only hosting` et, si demandé, `firestore:rules`, projet `fvasongs-d8055`.
+
+**Secrets GitHub** (Settings → Secrets and variables → Actions) — jamais dans git :
+
+| Secret | Contenu |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Keystore JKS encodé (`base64 -i android/keystore/fva_songs_release.jks`) |
+| `ANDROID_STORE_PASSWORD` | `storePassword` de `android/key.properties` |
+| `ANDROID_KEY_PASSWORD` | `keyPassword` |
+| `ANDROID_KEY_ALIAS` | `keyAlias` |
+| `FIREBASE_TOKEN` | Token CI (`firebase login:ci`) |
+
+Le build local (`flutter build apk --release` + copie + `firebase deploy`) reste possible sans Actions.
 
 ---
 
@@ -929,18 +961,17 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 ## 22. Contraintes, limites et dettes connues
 
 1. **Favoris liés à l’anonyme** — perte à la réinstallation ; logout admin recrée un uid.  
-2. **Pas de garde de route `/admin`** — sécurité réelle = rules.  
-3. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
-4. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
-5. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
-6. **Clés l10n mortes** — listes de culte / verset du jour.  
-7. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
-8. **iOS non distribué** — besoin compte développeur Apple.  
-9. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
-10. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
-11. **CI/CD** — GitHub Actions (`ci.yml`, `release-android.yml`) ; secrets keystore + `FIREBASE_TOKEN` requis pour le déploiement auto.  
-12. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
-13. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
+2. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
+3. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
+4. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
+5. **Clés l10n mortes** — listes de culte / verset du jour.  
+6. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
+7. **iOS non distribué** — besoin compte développeur Apple.  
+8. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
+9. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
+10. **CD manuel** — le workflow CD existe mais ne part pas tout seul : secrets GitHub à renseigner, puis `workflow_dispatch` ou GitHub Release.  
+11. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
+12. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
 
 ---
 
@@ -951,7 +982,6 @@ Hors spec actuelle, pistes cohérentes avec l’archi :
 - Comptes fidèles (email / Google) pour survivre à la réinstall des favoris.
 - Listes de culte (clés l10n déjà présentes).
 - Pagination du catalogue / collection métadonnées séparée des paroles, pour réduire le trafic réseau.
-- Garde GoRouter `redirect` sur `/admin`.
 - Play Store / TestFlight.
 - Thème sombre.
 - Tests widget / golden des écrans critiques.
@@ -1001,37 +1031,3 @@ Aucune PII, pas de texte de recherche, pas de titres / paroles de chants.
 - Rapports : [Firebase Analytics](https://console.firebase.google.com/project/fvasongs-d8055/analytics) (même propriété GA4).
 - Agrégats : ~24–48 h ; **DebugView** en quasi temps réel (`adb` / Xcode debug).
 - **Pas de rétroactivité** : seules les sessions post-déploiement sont comptées.
-
----
-
-## 25. CI/CD et mises à jour Android
-
-### 25.1 Objectif
-
-Automatiser build, signature, publication Hosting et notification de mise à jour **sans Play Store**. L’utilisateur installe le nouvel APK **par-dessus** l’ancien (même `applicationId`, clé de release, `versionCode` strictement croissant).
-
-### 25.2 Composants
-
-| Composant | Emplacement |
-| --- | --- |
-| Workflows GitHub Actions | `.github/workflows/ci.yml`, `release-android.yml` |
-| Scripts release | `scripts/ci/` |
-| Manifeste version | `hosting/app-version.json` (déployé, `Cache-Control: no-cache`) |
-| Vérification in-app | `lib/core/updates/` + `AppUpdateListener` au démarrage |
-
-### 25.3 Flux release automatique
-
-```
-merge main → tests → bump versionCode (pubspec) → build APK signé
-    → copie hosting/fva-songs.bin + app-version.json + index.html
-    → firebase deploy --only hosting
-    → commit [skip release] sur main
-```
-
-Les utilisateurs déjà installés voient le dialogue de mise à jour au prochain lancement (réseau requis pour lire le manifeste).
-
-### 25.4 Limites
-
-- Pas de mise à jour **silencieuse** en arrière-plan (impossible hors Play Store sans MDM).
-- L’utilisateur doit accepter l’installation Android (une tap).
-- Le keystore de release **ne doit jamais changer** : sinon Android exige une désinstallation.

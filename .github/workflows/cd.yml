@@ -1,0 +1,100 @@
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_rules:
+        description: Also deploy firestore.rules
+        type: boolean
+        default: true
+  release:
+    types: [published]
+
+concurrency:
+  group: cd-${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Signed APK and Firebase Hosting
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+    steps:
+      - name: Require secrets
+        run: |
+          : "${ANDROID_KEYSTORE_BASE64:?Missing GitHub secret ANDROID_KEYSTORE_BASE64}"
+          : "${ANDROID_STORE_PASSWORD:?Missing GitHub secret ANDROID_STORE_PASSWORD}"
+          : "${ANDROID_KEY_PASSWORD:?Missing GitHub secret ANDROID_KEY_PASSWORD}"
+          : "${ANDROID_KEY_ALIAS:?Missing GitHub secret ANDROID_KEY_ALIAS}"
+          : "${FIREBASE_TOKEN:?Missing GitHub secret FIREBASE_TOKEN}"
+
+      - uses: actions/checkout@v4
+
+      - name: Show deploy ref
+        run: echo "Deploying ${GITHUB_REF} (${GITHUB_SHA})"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.41.0"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Write Android signing files
+        run: |
+          mkdir -p android/keystore
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/keystore/fva_songs_release.jks
+          test -s android/keystore/fva_songs_release.jks
+          {
+            printf 'storePassword=%s\n' "$ANDROID_STORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'storeFile=%s\n' "../keystore/fva_songs_release.jks"
+          } > android/key.properties
+
+      - name: Build signed release APK
+        run: flutter build apk --release
+
+      - name: Stage APK for Hosting
+        run: |
+          version_line="$(sed -n 's/^version: //p' pubspec.yaml)"
+          export VERSION_NAME="${version_line%%+*}"
+          export VERSION_CODE="${version_line##*+}"
+          bash scripts/ci/prepare_hosting_release.sh
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fva-songs-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Deploy Firebase
+        env:
+          DEPLOY_RULES: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_rules || github.event_name != 'workflow_dispatch' }}
+        run: |
+          npm install -g firebase-tools
+          targets="hosting"
+          if [ "$DEPLOY_RULES" = "true" ]; then
+            targets="hosting,firestore:rules"
+          fi
+          firebase deploy \
+            --project fvasongs-d8055 \
+            --only "$targets" \
+            --non-interactive \
+            --token "$FIREBASE_TOKEN"

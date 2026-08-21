@@ -16,6 +16,7 @@ A cross-platform Flutter app for browsing, searching, and contributing worship s
 - [Localization](#localization)
 - [Moderation Workflow](#moderation-workflow)
 - [Distribution](#distribution)
+  - [Continuous deployment](#continuous-deployment)
 - [Firestore Data Model](#firestore-data-model)
 
 ## Features
@@ -164,6 +165,8 @@ Run the full suite:
 flutter test
 ```
 
+GitHub Actions (`.github/workflows/ci.yml`) runs `flutter gen-l10n`, `flutter analyze`, and `flutter test` on every pull request, every push to `main`, and every push to `feature/**`. Signed APK and Firebase deploys are a separate CD workflow (see [Continuous deployment](#continuous-deployment)).
+
 Run a single file or directory:
 
 ```bash
@@ -186,8 +189,24 @@ This logic lives in `AddSongController` and `ModerationController` (`lib/feature
 
 ## Distribution
 
-- **Android** — a signed release APK can be built with `flutter build apk --release` (signing config in `android/app/build.gradle.kts`, backed by a local, git-ignored `android/key.properties` + keystore). The `hosting/` folder contains a small landing page used to distribute the APK directly via Firebase Hosting (deploy with `firebase deploy --only hosting`).
+- **Android** — a signed release APK can be built with `flutter build apk --release` (signing config in `android/app/build.gradle.kts`, backed by a local, git-ignored `android/key.properties` + keystore). Copy it to `hosting/fva-songs.bin` (Spark cannot upload a `.apk`; Hosting rewrites `/fva-songs.apk` to that file). The `hosting/` folder is the landing page; deploy with `firebase deploy --only hosting`.
 - **iOS** — building and distributing to TestFlight/App Store requires an active Apple Developer Program membership (`flutter build ipa`).
+
+### Continuous deployment
+
+`.github/workflows/cd.yml` builds a signed APK and deploys Firebase Hosting (and optionally Firestore rules). It does **not** run on every push: start it from the Actions tab (`workflow_dispatch`) on `main` after CI is green, or publish a GitHub Release.
+
+Add these repository secrets (Settings → Secrets and variables → Actions). Never commit the keystore, `android/key.properties`, or a Firebase token.
+
+| Secret | How to fill it |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -i android/keystore/fva_songs_release.jks \| pbcopy` |
+| `ANDROID_STORE_PASSWORD` | `storePassword` from local `android/key.properties` |
+| `ANDROID_KEY_PASSWORD` | `keyPassword` |
+| `ANDROID_KEY_ALIAS` | `keyAlias` |
+| `FIREBASE_TOKEN` | `firebase login:ci` (project `fvasongs-d8055`) |
+
+The workflow writes signing files only on the GitHub runner, copies the APK to `hosting/fva-songs.bin`, updates the landing version string from `pubspec.yaml`, and runs `firebase deploy`. See `spec.md` §20.6.
 
 ## Firestore Data Model
 
