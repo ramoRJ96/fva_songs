@@ -38,6 +38,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Use runner JDK for Gradle
+        run: sed -i '/^org.gradle.java.home=/d' android/gradle.properties
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
