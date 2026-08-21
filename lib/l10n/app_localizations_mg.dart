@@ -319,4 +319,18 @@ class AppLocalizationsMg extends AppLocalizations {
 
   @override
   String get submissionStatusRejected => 'Nolavina';
+
+  @override
+  String get updateAvailableTitle => 'Fanavaozana misy';
+
+  @override
+  String updateAvailableMessage(String version) {
+    return 'Ny dika $version efa misy. Alefaso mba hanavaozana ny app (hitahiry ny angonao).';
+  }
+
+  @override
+  String get updateDownloadButton => 'Alaivo';
+
+  @override
+  String get updateLaterButton => 'Tsy izao';
 }

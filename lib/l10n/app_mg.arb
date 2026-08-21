@@ -113,5 +113,14 @@
   "mySubmissionsEmptySubtitle": "Hiseho eto ny fanampiana sy fanovana alefanao.",
   "submissionStatusPending": "Miandry",
   "submissionStatusApproved": "Ekena",
-  "submissionStatusRejected": "Nolavina"
+  "submissionStatusRejected": "Nolavina",
+  "updateAvailableTitle": "Fanavaozana misy",
+  "updateAvailableMessage": "Ny dika {version} efa misy. Alefaso mba hanavaozana ny app (hitahiry ny angonao).",
+  "@updateAvailableMessage": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateDownloadButton": "Alaivo",
+  "updateLaterButton": "Tsy izao"
 }

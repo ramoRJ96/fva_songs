@@ -691,6 +691,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Refusée'**
   String get submissionStatusRejected;
+
+  /// No description provided for @updateAvailableTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise à jour disponible'**
+  String get updateAvailableTitle;
+
+  /// No description provided for @updateAvailableMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'La version {version} est disponible. Téléchargez-la pour mettre à jour l\'application (vos données seront conservées).'**
+  String updateAvailableMessage(String version);
+
+  /// No description provided for @updateDownloadButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger'**
+  String get updateDownloadButton;
+
+  /// No description provided for @updateLaterButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get updateLaterButton;
 }
 
 class _AppLocalizationsDelegate

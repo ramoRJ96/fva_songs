@@ -113,5 +113,14 @@
   "mySubmissionsEmptySubtitle": "Vos ajouts et modifications soumis apparaîtront ici.",
   "submissionStatusPending": "En attente",
   "submissionStatusApproved": "Approuvée",
-  "submissionStatusRejected": "Refusée"
+  "submissionStatusRejected": "Refusée",
+  "updateAvailableTitle": "Mise à jour disponible",
+  "updateAvailableMessage": "La version {version} est disponible. Téléchargez-la pour mettre à jour l'application (vos données seront conservées).",
+  "@updateAvailableMessage": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateDownloadButton": "Télécharger",
+  "updateLaterButton": "Plus tard"
 }

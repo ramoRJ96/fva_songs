@@ -63,6 +63,12 @@
           { "key": "Content-Disposition", "value": "attachment; filename=\"fva-songs.apk\"" },
           { "key": "Cache-Control", "value": "no-cache" }
         ]
+      },
+      {
+        "source": "/app-version.json",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
       }
     ]
   }

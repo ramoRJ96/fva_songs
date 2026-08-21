@@ -321,4 +321,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get submissionStatusRejected => 'Refusée';
+
+  @override
+  String get updateAvailableTitle => 'Mise à jour disponible';
+
+  @override
+  String updateAvailableMessage(String version) {
+    return 'La version $version est disponible. Téléchargez-la pour mettre à jour l\'application (vos données seront conservées).';
+  }
+
+  @override
+  String get updateDownloadButton => 'Télécharger';
+
+  @override
+  String get updateLaterButton => 'Plus tard';
 }

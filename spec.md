@@ -1,8 +1,8 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.6  
+**Version du document :** 1.7  
 **Version de l’application :** 0.1.2+3  
-**Date :** 18 août 2026  
+**Date :** 20 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
 Ce document décrit le produit tel qu’il est implémenté. Toute évolution (nouvelle fonctionnalité, changement de schéma Firestore, nouveau rôle, nouvelle convention) doit mettre à jour ce fichier.
@@ -38,6 +38,7 @@ Les agents IA **lisent ce fichier avant toute modification** et le tiennent à j
 22. [Contraintes, limites et dettes connues](#22-contraintes-limites-et-dettes-connues)
 23. [Évolutions envisagées](#23-évolutions-envisagées)
 24. [Analytics (GA4)](#24-analytics-ga4)
+25. [CI/CD et mises à jour Android](#25-cicd-et-mises-à-jour-android)
 
 ---
 
@@ -294,6 +295,7 @@ lib/
 ├── core/
 │   ├── firebase/firebase_bootstrap.dart
 │   ├── analytics/                 # AnalyticsClient, observer GoRouter, providers
+│   ├── updates/                   # Vérification mise à jour APK (app-version.json)
 │   ├── l10n/locale_controller.dart, fallback_localizations.dart
 │   ├── responsiveness/            # breakpoints, configs, extensions
 │   ├── router/app_router.dart
@@ -310,7 +312,9 @@ lib/
 
 test/                              # miroir de lib/ (unitaires)
 scripts/                           # import fihirana (Python + JSON)
-hosting/                           # landing APK (index.html, analytics-config.js, icône, .bin gitignoré)
+hosting/                           # landing, app-version.json, analytics-config.js, .bin gitignoré
+.github/workflows/                 # CI + release Android
+scripts/ci/                        # bump version, prepare hosting
 firestore.rules
 firestore.indexes.json
 firebase.json
@@ -837,8 +841,8 @@ Commande : `flutter test`
 
 ### 20.1 Versioning
 
-`pubspec.yaml` : `version: 0.1.2+3`  
-→ `versionName` 0.1.1, `versionCode` 2 (nécessaire pour réinstaller par-dessus l’APK précédent).
+`pubspec.yaml` : `version: X.Y.Z+N`  
+→ `versionName` = `X.Y.Z`, `versionCode` = `N` (entier Android). **Incrémenter `N` à chaque release** pour permettre l’installation par-dessus l’APK existant (même clé de signature, sans désinstallation).
 
 ### 20.2 Signature Android
 
@@ -867,7 +871,37 @@ Procédure :
 4. Headers sur `/fva-songs.apk` : `Content-Type: application/vnd.android.package-archive`, `Content-Disposition: attachment; filename="fva-songs.apk"`, `Cache-Control: no-cache`.
 5. Landing : bouton `href="fva-songs.apk"`.
 6. **Analytics landing** : renseigner `hosting/analytics-config.js` avec le Measurement ID GA4 (`G-…`) du flux Web Firebase, puis `firebase deploy --only hosting`.
-7. `firebase deploy --only hosting`
+7. `firebase deploy --only hosting` (ou laisser GitHub Actions le faire — voir §25).
+
+### 20.4 Mise à jour in-app (hors Play Store)
+
+- Fichier public `hosting/app-version.json` : `versionName`, `versionCode`, `downloadUrl`.
+- Au démarrage, l’app compare le `versionCode` local (`package_info_plus`) au manifeste Hosting.
+- Si une version plus récente existe → dialogue FR/MG avec lien vers `/fva-songs.apk`.
+- **Installation par-dessus** : Android remplace l’app si le `versionCode` est supérieur et la **même clé de signature** est utilisée (pas de désinstallation, favoris locaux Auth/Firestore conservés).
+
+### 20.5 CI/CD GitHub Actions
+
+Workflows dans `.github/workflows/` :
+
+| Workflow | Déclencheur | Rôle |
+| --- | --- | --- |
+| `ci.yml` | PR / push `main` | `flutter analyze` + `flutter test` |
+| `release-android.yml` | push `main` (sauf `[skip release]`) ou manuel | bump `versionCode`, build APK signé, `hosting/*`, deploy Hosting, commit `[skip release]` |
+
+Scripts : `scripts/ci/bump_build_number.sh`, `scripts/ci/prepare_hosting_release.sh`.
+
+**Secrets GitHub** (Settings → Secrets → Actions) :
+
+| Secret | Contenu |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Keystore JKS encodé base64 (`base64 -w0 fva_songs_release.jks`) |
+| `ANDROID_KEY_ALIAS` | Alias de la clé |
+| `ANDROID_KEY_PASSWORD` | Mot de passe clé |
+| `ANDROID_STORE_PASSWORD` | Mot de passe keystore |
+| `FIREBASE_TOKEN` | `firebase login:ci` (compte avec droits Hosting sur `fvasongs-d8055`) |
+
+Après configuration des secrets, chaque merge sur `main` peut publier automatiquement un nouvel APK.
 
 **URL :** https://fvasongs-d8055.web.app  
 **Console :** https://console.firebase.google.com/project/fvasongs-d8055/overview
@@ -904,7 +938,7 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 8. **iOS non distribué** — besoin compte développeur Apple.  
 9. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
 10. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
-11. **Pas de CI** dans le dépôt au moment de cette spec.  
+11. **CI/CD** — GitHub Actions (`ci.yml`, `release-android.yml`) ; secrets keystore + `FIREBASE_TOKEN` requis pour le déploiement auto.  
 12. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
 13. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
 
@@ -967,3 +1001,37 @@ Aucune PII, pas de texte de recherche, pas de titres / paroles de chants.
 - Rapports : [Firebase Analytics](https://console.firebase.google.com/project/fvasongs-d8055/analytics) (même propriété GA4).
 - Agrégats : ~24–48 h ; **DebugView** en quasi temps réel (`adb` / Xcode debug).
 - **Pas de rétroactivité** : seules les sessions post-déploiement sont comptées.
+
+---
+
+## 25. CI/CD et mises à jour Android
+
+### 25.1 Objectif
+
+Automatiser build, signature, publication Hosting et notification de mise à jour **sans Play Store**. L’utilisateur installe le nouvel APK **par-dessus** l’ancien (même `applicationId`, clé de release, `versionCode` strictement croissant).
+
+### 25.2 Composants
+
+| Composant | Emplacement |
+| --- | --- |
+| Workflows GitHub Actions | `.github/workflows/ci.yml`, `release-android.yml` |
+| Scripts release | `scripts/ci/` |
+| Manifeste version | `hosting/app-version.json` (déployé, `Cache-Control: no-cache`) |
+| Vérification in-app | `lib/core/updates/` + `AppUpdateListener` au démarrage |
+
+### 25.3 Flux release automatique
+
+```
+merge main → tests → bump versionCode (pubspec) → build APK signé
+    → copie hosting/fva-songs.bin + app-version.json + index.html
+    → firebase deploy --only hosting
+    → commit [skip release] sur main
+```
+
+Les utilisateurs déjà installés voient le dialogue de mise à jour au prochain lancement (réseau requis pour lire le manifeste).
+
+### 25.4 Limites
+
+- Pas de mise à jour **silencieuse** en arrière-plan (impossible hors Play Store sans MDM).
+- L’utilisateur doit accepter l’installation Android (une tap).
+- Le keystore de release **ne doit jamais changer** : sinon Android exige une désinstallation.
