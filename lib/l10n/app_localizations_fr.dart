@@ -75,16 +75,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get songDoesNotExist => 'Ce chant n\'existe pas.';
 
   @override
-  String get verseOfTheDay => 'VERSET DU JOUR';
-
-  @override
   String get myFavorites => 'Mes favoris';
-
-  @override
-  String get tabFavorites => 'Favoris';
-
-  @override
-  String get tabWorshipLists => 'Listes de culte';
 
   @override
   String get savedTitles => 'TITRES ENREGISTRÉS';
@@ -237,6 +228,15 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get screenStayOnActive =>
       'L\'écran reste allumé pendant l\'affichage des paroles.';
+
+  @override
+  String get fontSizeSmall => 'Petite';
+
+  @override
+  String get fontSizeNormal => 'Normale';
+
+  @override
+  String get fontSizeLarge => 'Grande';
 
   @override
   String get projectionMode => 'Projection';

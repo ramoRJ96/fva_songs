@@ -30,7 +30,7 @@ Do not put Firestore or Auth calls in widgets or domain entities.
 - Public catalogue = `songs` with `status == approved` only. Regular users never write `songs`.
 - User create/update → `song_submissions` (`pending`). Admin save → direct publish.
 - Display lyrics with `song.sectionsForDisplay` (refrain/chorus after the first verse). Do not reorder stored `sections` for display.
-- Anonymous auth at startup; admin = email/password + role (`admins/{uid}`, `config/admins.emails`, or bootstrap email in datasource **and** `firestore.rules` — keep them in sync).
+- Anonymous auth at startup; admin = email/password + role (`admins/{uid}` or `config/admins.emails`). Never hardcode an admin e-mail in the client or `firestore.rules`.
 - Search is in-memory (`SongFilterService` + `searchText`). Do not query Firestore for each keystroke.
 - UI copy goes through l10n (`app_fr.arb` / `app_mg.arb` + `flutter gen-l10n`). Do not hardcode user-facing strings.
 
@@ -47,7 +47,7 @@ flutter build apk --release
 ## Git and secrets
 
 - Commit messages in English, imperative, matching existing history.
-- Do not include `Co-authored-by: Cursor` (or any Cursor trailer) in commits.
+- Never add `Co-authored-by: Cursor` (or any Cursor trailer). Cursor’s `git commit` often injects it: after `git add`, create the commit with `git commit-tree` then point `HEAD` at it (`git reset --soft <sha>`). Check `git log -1` has no trailer before pushing. Do not rewrite already-pushed GitHub history unless the user explicitly asks.
 - Never commit `android/key.properties`, `android/keystore/`, `hosting/*.apk`, `hosting/*.bin`, or Firebase tokens.
 - Do not reformat unrelated `lib/` files.
 

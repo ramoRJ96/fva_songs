@@ -123,12 +123,11 @@ test/                         # Mirrors lib/ structure — see Testing section
 
 6. **Grant yourself admin rights**
 
-   An account is treated as admin if any of these is true (see `AuthRemoteDataSource`):
-   - its email matches the fallback admin email hardcoded in the datasource, **or**
+   An account is treated as admin if either of these is true (see `AuthRemoteDataSource` and `firestore.rules`):
    - a document exists at `admins/{uid}` in Firestore, **or**
    - its email is listed in `config/admins.emails`.
 
-   The simplest way for a new project is to create your admin user in Firebase Authentication, then add a document at `admins/{uid}` (any content) in Firestore.
+   The simplest way is to create your admin user in Firebase Authentication, then add a document at `admins/{uid}` (any content) in Firestore. Do not hardcode an admin email in the client or in the rules.
 
 7. **Generate app icons & splash screen** (only needed if you change `assets/branding/app_icon.png`)
 

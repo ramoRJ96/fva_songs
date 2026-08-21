@@ -17,10 +17,10 @@ class LyricsControllerBar extends StatelessWidget {
   final VoidCallback onIncrease;
   final VoidCallback onSanctuaryMode;
 
-  String get _sizeLabel {
-    if (fontSize < 18) return 'Petite';
-    if (fontSize > 26) return 'Grande';
-    return 'Normale';
+  String _sizeLabel(AppLocalizations l10n) {
+    if (fontSize < 18) return l10n.fontSizeSmall;
+    if (fontSize > 26) return l10n.fontSizeLarge;
+    return l10n.fontSizeNormal;
   }
 
   @override
@@ -59,7 +59,7 @@ class LyricsControllerBar extends StatelessWidget {
                 SizedBox(
                   width: 64,
                   child: Text(
-                    _sizeLabel,
+                    _sizeLabel(l10n),
                     style: AppTextStyles.labelSm(color: AppColors.onSurfaceVariant),
                     textAlign: TextAlign.center,
                   ),

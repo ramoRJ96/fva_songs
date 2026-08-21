@@ -224,29 +224,11 @@ abstract class AppLocalizations {
   /// **'Ce chant n\'existe pas.'**
   String get songDoesNotExist;
 
-  /// No description provided for @verseOfTheDay.
-  ///
-  /// In fr, this message translates to:
-  /// **'VERSET DU JOUR'**
-  String get verseOfTheDay;
-
   /// No description provided for @myFavorites.
   ///
   /// In fr, this message translates to:
   /// **'Mes favoris'**
   String get myFavorites;
-
-  /// No description provided for @tabFavorites.
-  ///
-  /// In fr, this message translates to:
-  /// **'Favoris'**
-  String get tabFavorites;
-
-  /// No description provided for @tabWorshipLists.
-  ///
-  /// In fr, this message translates to:
-  /// **'Listes de culte'**
-  String get tabWorshipLists;
 
   /// No description provided for @savedTitles.
   ///
@@ -529,6 +511,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L\'écran reste allumé pendant l\'affichage des paroles.'**
   String get screenStayOnActive;
+
+  /// No description provided for @fontSizeSmall.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petite'**
+  String get fontSizeSmall;
+
+  /// No description provided for @fontSizeNormal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Normale'**
+  String get fontSizeNormal;
+
+  /// No description provided for @fontSizeLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grande'**
+  String get fontSizeLarge;
 
   /// No description provided for @projectionMode.
   ///

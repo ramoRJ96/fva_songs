@@ -5,17 +5,68 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admin = e-mail bootstrap, liste config/admins.emails, ou doc admins/{uid}.
+    // Admin = doc admins/{uid}, ou e-mail dans config/admins.emails.
     function isAdmin() {
       return isSignedIn()
         && request.auth.token.email != null
         && (
-          request.auth.token.email == 'moiseraidjy@gmail.com'
-          || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
           || (
             exists(/databases/$(database)/documents/config/admins)
             && request.auth.token.email
               in get(/databases/$(database)/documents/config/admins).data.emails
+          )
+        );
+    }
+
+    function isNonEmptyString(value, maxLen) {
+      return value is string && value.size() > 0 && value.size() <= maxLen;
+    }
+
+    function isBoundedString(value, maxLen) {
+      return value is string && value.size() <= maxLen;
+    }
+
+    function isValidSongPayload(payload) {
+      return payload is map
+        && payload.keys().hasOnly([
+          'title', 'number', 'author', 'theme', 'key', 'language',
+          'firstLine', 'status', 'searchText', 'sections', 'updatedAt'
+        ])
+        && isNonEmptyString(payload.title, 300)
+        && isBoundedString(payload.number, 40)
+        && isBoundedString(payload.author, 200)
+        && isBoundedString(payload.theme, 200)
+        && isBoundedString(payload.key, 50)
+        && payload.language in ['fr', 'mg']
+        && isBoundedString(payload.firstLine, 500)
+        && payload.status in ['approved', 'pending']
+        && isBoundedString(payload.searchText, 100000)
+        && payload.sections is list
+        && payload.sections.size() >= 1
+        && payload.sections.size() <= 80
+        && payload.updatedAt is string
+        && payload.updatedAt.size() <= 40;
+    }
+
+    function isValidPendingSubmission() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          'type', 'status', 'createdBy', 'targetSongId', 'payload', 'createdAt'
+        ])
+        && data.status == 'pending'
+        && data.createdBy == request.auth.uid
+        && data.type in ['create', 'update']
+        && data.createdAt is string
+        && data.createdAt.size() <= 40
+        && isValidSongPayload(data.payload)
+        && (
+          (data.type == 'create' && data.targetSongId == null)
+          || (
+            data.type == 'update'
+            && data.targetSongId is string
+            && data.targetSongId.size() > 0
+            && data.targetSongId.size() <= 128
           )
         );
     }
@@ -35,13 +86,7 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (isSignedIn() && resource.data.createdBy == request.auth.uid);
 
-      allow create: if isSignedIn()
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.type in ['create', 'update']
-        && request.resource.data.keys().hasAll([
-          'type', 'status', 'createdBy', 'payload', 'createdAt'
-        ]);
+      allow create: if isSignedIn() && isValidPendingSubmission();
 
       allow update: if isAdmin()
         && request.resource.data.status in ['approved', 'rejected', 'pending'];

@@ -28,18 +28,18 @@ void main() {
       expect(await dataSource.isCurrentUserAdmin(), isFalse);
     });
 
-    test('true si l\'email correspond à l\'admin de secours', () async {
+    test('false si l\'email n\'est pas dans config/admins ni admins/{uid}', () async {
       final auth = MockFirebaseAuth(
         signedIn: true,
         mockUser: MockUser(
-          uid: 'uid-fallback',
+          uid: 'uid-unknown',
           isAnonymous: false,
-          email: AuthRemoteDataSource.fallbackAdminEmail,
+          email: 'inconnu@mail.com',
         ),
       );
       final dataSource = AuthRemoteDataSource(auth: auth, firestore: firestore);
 
-      expect(await dataSource.isCurrentUserAdmin(), isTrue);
+      expect(await dataSource.isCurrentUserAdmin(), isFalse);
     });
 
     test('true si un document admins/{uid} existe', () async {

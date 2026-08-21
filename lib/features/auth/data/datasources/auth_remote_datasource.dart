@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 /// Accès Firebase Auth + vérification du rôle admin.
 ///
 /// Un admin est reconnu si :
-/// - son e-mail figure dans `config/admins.emails`, ou
-/// - un document `admins/{uid}` existe.
+/// - un document `admins/{uid}` existe, ou
+/// - son e-mail figure dans `config/admins.emails`.
 class AuthRemoteDataSource {
   AuthRemoteDataSource({
     FirebaseAuth? auth,
@@ -15,9 +15,6 @@ class AuthRemoteDataSource {
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
-
-  /// E-mail admin de secours (bootstrap) si le doc config n'existe pas encore.
-  static const fallbackAdminEmail = 'moiseraidjy@gmail.com';
 
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
@@ -60,8 +57,6 @@ class AuthRemoteDataSource {
     final email = user.email?.trim().toLowerCase();
     if (email == null || email.isEmpty) return false;
 
-    if (email == fallbackAdminEmail) return true;
-
     try {
       final config = await _firestore.collection('config').doc('admins').get();
       final emails = (config.data()?['emails'] as List<dynamic>? ?? const [])
@@ -69,7 +64,7 @@ class AuthRemoteDataSource {
           .toList();
       return emails.contains(email);
     } catch (_) {
-      return email == fallbackAdminEmail;
+      return false;
     }
   }
 }

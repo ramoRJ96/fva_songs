@@ -75,16 +75,7 @@ class AppLocalizationsMg extends AppLocalizations {
   String get songDoesNotExist => 'Tsy misy io hira io.';
 
   @override
-  String get verseOfTheDay => 'ANDININY ANDROANY';
-
-  @override
   String get myFavorites => 'Ny tiako';
-
-  @override
-  String get tabFavorites => 'Tiana';
-
-  @override
-  String get tabWorshipLists => 'Lisitra fivavahana';
 
   @override
   String get savedTitles => 'LOHATENY VOATAHIRY';
@@ -235,6 +226,15 @@ class AppLocalizationsMg extends AppLocalizations {
   @override
   String get screenStayOnActive =>
       'Mijanona mbola mandre ny efijery mandritra ny fanehoana ny tononkira.';
+
+  @override
+  String get fontSizeSmall => 'Kely';
+
+  @override
+  String get fontSizeNormal => 'Antonony';
+
+  @override
+  String get fontSizeLarge => 'Lehibe';
 
   @override
   String get projectionMode => 'Projection';

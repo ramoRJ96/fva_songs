@@ -1,8 +1,8 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.8  
+**Version du document :** 1.10  
 **Version de l’application :** 0.1.2+3  
-**Date :** 20 août 2026  
+**Date :** 21 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
 Ce document décrit le produit tel qu’il est implémenté. Toute évolution (nouvelle fonctionnalité, changement de schéma Firestore, nouveau rôle, nouvelle convention) doit mettre à jour ce fichier.
@@ -79,7 +79,7 @@ Distribution actuelle : APK Android signé, téléchargeable depuis une landing 
 | Rôle | Comment il est identifié | Droits |
 | --- | --- | --- |
 | **Utilisateur public** | Session Firebase Auth **anonyme**, créée au démarrage si aucune session n’existe. | Lire le catalogue `approved`, rechercher, favoris (scoped à son `uid`), soumettre un `create` / `update` en `pending`. |
-| **Administrateur** | Session **email / mot de passe**. Le rôle est reconnu si (1) un document `admins/{uid}` existe, **ou** (2) l’e-mail figure dans `config/admins.emails`, **ou** (3) l’e-mail égale l’e-mail bootstrap `moiseraidjy@gmail.com`. | Tous les droits utilisateur + publication directe dans `songs` + lecture de toutes les soumissions + approve / reject. |
+| **Administrateur** | Session **email / mot de passe**. Le rôle est reconnu si (1) un document `admins/{uid}` existe, **ou** (2) l’e-mail figure dans `config/admins.emails`. | Tous les droits utilisateur + publication directe dans `songs` + lecture de toutes les soumissions + approve / reject. |
 | **Console Firebase** | Opérateur humain hors app. | Seul moyen d’écrire `admins/{uid}` et `config/admins` (`allow write: if false` dans les rules). |
 
 Règles importantes :
@@ -113,7 +113,7 @@ Règles importantes :
 - AppBar : numéro + titre, bouton retour, bouton **Modifier**, bouton favori.
 - Métadonnées (auteur, thème, tonalité, langue).
 - Paroles via `song.sectionsForDisplay` (refrain/chorus après le 1er couplet).
-- Contrôle de taille de police : 14–36 px, pas de ±2, défaut 22.
+- Contrôle de taille de police : 14–36 px, pas de ±2, défaut 22. Labels Petite / Normale / Grande via l10n (`fontSizeSmall` / `fontSizeNormal` / `fontSizeLarge`).
 - **Wake lock** (`wakelock_plus`) : l’écran reste allumé tant que l’écran détail est ouvert (culte / lecture des paroles). Désactivé au `dispose`.
 - État vide si l’id n’existe pas dans le catalogue chargé.
 
@@ -172,7 +172,7 @@ Résultat :
 
 ### 3.9 Hors périmètre actuel (non implémenté)
 
-Malgré quelques clés l10n héritées (`tabWorshipLists`, `verseOfTheDay`), **les listes de culte** et le **verset du jour** ne sont pas des fonctionnalités livrées.
+**Les listes de culte** et le **verset du jour** ne sont pas des fonctionnalités livrées.
 
 Pas de Play Store, pas de TestFlight, pas de compte utilisateur nominatif pour les fidèles, pas de sync multi-appareils des favoris.
 
@@ -183,7 +183,7 @@ Pas de Play Store, pas de TestFlight, pas de compte utilisateur nominatif pour l
 | Critère | Cible / implémentation |
 | --- | --- |
 | Offline-first | Cache Firestore disque, taille illimitée. Lecture du catalogue depuis le cache si le réseau est absent. |
-| Performance liste | Construction paresseuse (`SliverList` / `SliverGrid`, `ValueKey`, `cacheExtent` 480). Rebuilds isolés (AppBar / compteur / résultats). Catalogue en mémoire **sans paroles**. |
+| Performance liste | Construction paresseuse (`SliverList` / `SliverGrid`, `ValueKey`, `scrollCacheExtent` 480 px). Rebuilds isolés (AppBar / compteur / résultats). Catalogue en mémoire **sans paroles**. |
 | Performance détail | `getById` lit le **cache Firestore d’abord** (le snapshot catalogue a déjà le document complet). `songDetailProvider` keepAlive 2 min. Paroles en `ListView.builder`. |
 | Performance recherche | Filtrage 100 % in-memory. Debounce 200 ms. Query vide + scope ≠ favoris → même instance de liste (pas de rebuild inutile). |
 | Performance 1er frame | Inter **embarqué** (`google_fonts/*.ttf`) ; `GoogleFonts.config.allowRuntimeFetching = false`. |
@@ -313,8 +313,7 @@ lib/
 test/                              # miroir de lib/ (unitaires)
 .github/workflows/ci.yml           # GitHub Actions : analyze + test
 .github/workflows/cd.yml           # GitHub Actions : APK signé + Hosting / rules (manuel)
-.github/workflows/release-android.yml  # Release auto sur push main (optionnel)
-scripts/ci/                        # bump versionCode, prepare hosting
+scripts/ci/                        # prepare hosting (+ bump versionCode optionnel)
 scripts/                           # import fihirana (Python + JSON)
 hosting/                           # landing, app-version.json, analytics-config.js, .bin gitignoré
 firestore.rules
@@ -526,8 +525,7 @@ isSignedIn  ⇔ request.auth != null
 isAdmin     ⇔ signed in
             ∧ token.email != null
             ∧ (
-                 email == moiseraidjy@gmail.com
-              ∨  exists admins/{uid}
+                 exists admins/{uid}
               ∨  email ∈ config/admins.emails
               )
 ```
@@ -535,11 +533,15 @@ isAdmin     ⇔ signed in
 | Chemin | Read | Write |
 | --- | --- | --- |
 | `songs/{id}` | admin **ou** (authentifié **et** `status == approved`) | create : admin **et** `status == approved` ; update/delete : admin |
-| `song_submissions/{id}` | admin **ou** auteur (`createdBy == uid`) | create : authentifié, `status == pending`, `createdBy == uid`, type create/update, clés obligatoires ; update : admin et status ∈ approved/rejected/pending ; delete : admin |
+| `song_submissions/{id}` | admin **ou** auteur (`createdBy == uid`) | create : authentifié **et** soumission `pending` valide (voir ci-dessous) ; update : admin et status ∈ approved/rejected/pending ; delete : admin |
 | `users/{userId}/favorites/{songId}` | `uid == userId` | idem |
 | `config/admins` | authentifié | **interdit** |
 | `admins/{uid}` | soi-même ou admin | **interdit** |
 | tout le reste | interdit | interdit |
+
+Create `song_submissions` : clés exactes `type`, `status`, `createdBy`, `targetSongId`, `payload`, `createdAt` ; `status == pending` ; `createdBy == uid` ; `type` create/update ; `createdAt` string court.  
+`create` ⇒ `targetSongId == null` ; `update` ⇒ `targetSongId` string non vide (≤ 128).  
+`payload` : clés exactes d’un document `songs` ; `title` non vide (≤ 300) ; champs texte bornés ; `language` ∈ `fr`/`mg` ; `status` ∈ `approved`/`pending` ; `sections` liste de 1 à 80 ; `updatedAt` string.
 
 Implications :
 
@@ -568,10 +570,11 @@ Ordre dans `_isAdminUser` :
 
 1. Document `admins/{uid}` existe → true  
 2. Pas d’e-mail → false  
-3. E-mail == fallback → true  
-4. Lecture `config/admins.emails` ; en cas d’erreur → fallback email uniquement
+3. Lecture `config/admins.emails` (comparaison lower-case trimmed) ; en cas d’erreur → false
 
 Le stream `watchIsAdmin` se recalcule à chaque `authStateChanges`.
+
+Aucun e-mail n’est codé en dur : le premier admin s’ajoute via la console (`admins/{uid}` ou `config/admins`).
 
 ### 11.4 Logout admin
 
@@ -847,7 +850,7 @@ CI : GitHub Actions (voir §20.5). CD : voir §20.6.
 ### 20.1 Versioning
 
 `pubspec.yaml` : `version: 0.1.2+3`  
-→ `versionName` 0.1.1, `versionCode` 2 (nécessaire pour réinstaller par-dessus l’APK précédent).
+→ `versionName` 0.1.2, `versionCode` 3 (nécessaire pour réinstaller par-dessus l’APK précédent).
 
 ### 20.2 Signature Android
 
@@ -964,14 +967,12 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 2. **Query `status` sans `orderBy`** — `watchSongs` / `watchPending` filtrent côté serveur ; le tri reste client (évite un index composite).  
 3. **Pas de projection de champs Firestore (mobile)** — `watchSongs` ignore `sections` au parse, mais le document complet est tout de même téléchargé / mis en cache. Pagination ou collection `songs_meta` = évolution future.  
 4. **Login admin remplace la session anonyme** — les favoris de la session anonyme ne sont plus ceux de l’admin (uid différent).  
-5. **Clés l10n mortes** — listes de culte / verset du jour.  
-6. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
-7. **iOS non distribué** — besoin compte développeur Apple.  
-8. **E-mail admin bootstrap en dur** dans le client **et** les rules — à garder synchronisé.  
-9. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
-10. **CD manuel** — le workflow CD existe mais ne part pas tout seul : secrets GitHub à renseigner, puis `workflow_dispatch` ou GitHub Release.  
-11. **Trailer git Cursor** — les commits doivent être réécrits (`commit-tree`) si l’IDE réinjecte `Co-authored-by`.
-12. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
+5. **Avertissement build** — icônes Cupertino tree-shake (Material seulement). Non bloquant.  
+6. **iOS non distribué** — besoin compte développeur Apple.  
+7. **APK ~57 Mo** — poids typique Flutter + fonts ; pas de split-per-abi livré sur la landing (un seul fat APK).  
+8. **CD manuel** — volontaire : secrets GitHub à renseigner, puis `workflow_dispatch` ou GitHub Release (pas de déploiement sur push `main`).  
+9. **Trailer git Cursor** — `git commit` dans l’IDE peut injecter `Co-authored-by: Cursor`. Contournement opérationnel : `commit-tree` (voir `AGENTS.md`, section Git). Ne pas réécrire l’historique déjà poussé, sauf demande explicite.
+10. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
 
 ---
 
@@ -980,7 +981,7 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 Hors spec actuelle, pistes cohérentes avec l’archi :
 
 - Comptes fidèles (email / Google) pour survivre à la réinstall des favoris.
-- Listes de culte (clés l10n déjà présentes).
+- Listes de culte.
 - Pagination du catalogue / collection métadonnées séparée des paroles, pour réduire le trafic réseau.
 - Play Store / TestFlight.
 - Thème sombre.

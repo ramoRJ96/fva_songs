@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -33,7 +34,7 @@ class SongListScreen extends ConsumerWidget {
           }
         },
         child: CustomScrollView(
-          cacheExtent: 480,
+          scrollCacheExtent: const ScrollCacheExtent.pixels(480),
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: const [
             _SongsAppBar(),
