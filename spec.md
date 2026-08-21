@@ -1,6 +1,6 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.10  
+**Version du document :** 1.11  
 **Version de l’application :** 0.1.2+3  
 **Date :** 21 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
@@ -910,7 +910,7 @@ Job unique (`ubuntu-latest`) :
 3. `flutter analyze`
 4. `flutter test`
 
-SDK CI : Flutter **3.41.0** (channel `stable`) — `pubspec.lock` exige Dart ≥ 3.11 / Flutter ≥ 3.41 à cause de `wakelock_plus` 1.7.
+SDK CI / CD : Flutter **3.47.1** (channel `stable`) — même pin sur `ci.yml` et `cd.yml`. `pubspec.lock` exige Dart ≥ 3.11 / Flutter ≥ 3.41 (`wakelock_plus` 1.7). Ne pas laisser un workflow sans `flutter-version` : le stable non piné dérive (ex. 3.47 vs 3.41) et `flutter analyze` diverge (`cacheExtent` vs `scrollCacheExtent`).
 
 Le CD (§20.7) n’est **pas** déclenché par un push : CI et CD sont des workflows distincts.
 
@@ -925,7 +925,7 @@ Fichier : `.github/workflows/cd.yml`.
 
 Le job déploie le **ref Git choisi** (branche ou tag). Pour la prod, lancer depuis `main` après un CI vert. Les rules Firestore déployées sont celles du ref : une branche plus ancienne peut écraser une policy plus stricte déjà en prod.
 
-Job unique (`ubuntu-latest`), Flutter **3.41.0**, JDK 17 :
+Job unique (`ubuntu-latest`), Flutter **3.47.1**, JDK 17 :
 
 1. Vérifier que les secrets GitHub sont présents (sinon échec explicite).
 2. Décoder le keystore et écrire `android/key.properties` **uniquement sur le runner** (jamais commités).

@@ -21,9 +21,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # pubspec.lock requires Dart >= 3.11 / Flutter >= 3.41 (wakelock_plus 1.7).
+          # Same pin as CD. 3.41.0 has no scrollCacheExtent; unpinned stable drifted to 3.47.1.
           channel: stable
-          flutter-version: "3.41.0"
+          flutter-version: "3.47.1"
           cache: true
 
       - name: Install dependencies
