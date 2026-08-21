@@ -193,7 +193,7 @@ This logic lives in `AddSongController` and `ModerationController` (`lib/feature
 
 ### Continuous deployment
 
-`.github/workflows/cd.yml` builds a signed APK and deploys Firebase Hosting (and optionally Firestore rules). It does **not** run on every push: start it from the Actions tab (`workflow_dispatch`) on `main` after CI is green, or publish a GitHub Release.
+`.github/workflows/cd.yml` builds a signed APK and deploys Firebase Hosting (and Firestore rules). After a **green CI** on `main`, CD starts automatically. You can still run it from the Actions tab (`workflow_dispatch`) or by publishing a GitHub Release. Put `[skip cd]` in a commit message to push `main` without deploying.
 
 Add these repository secrets (Settings → Secrets and variables → Actions). Never commit the keystore, `android/key.properties`, or a Firebase token.
 

@@ -1,6 +1,9 @@
 name: CD
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
     inputs:
       deploy_rules:
@@ -20,6 +23,12 @@ permissions:
 jobs:
   release:
     name: Signed APK and Firebase Hosting
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
     runs-on: ubuntu-latest
     env:
       ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
@@ -37,28 +46,46 @@ jobs:
           : "${FIREBASE_TOKEN:?Missing GitHub secret FIREBASE_TOKEN}"
 
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Skip if commit requests it
+        id: skip
+        run: |
+          if git log -1 --format=%B | grep -q '\[skip cd\]'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Skipping CD ([skip cd] in commit message)"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Use runner JDK for Gradle
+        if: steps.skip.outputs.skip != 'true'
         run: sed -i '/^org.gradle.java.home=/d' android/gradle.properties
 
       - name: Show deploy ref
-        run: echo "Deploying ${GITHUB_REF} (${GITHUB_SHA})"
+        if: steps.skip.outputs.skip != 'true'
+        run: echo "Deploying $(git rev-parse --abbrev-ref HEAD) $(git rev-parse HEAD)"
 
       - uses: actions/setup-java@v4
+        if: steps.skip.outputs.skip != 'true'
         with:
           distribution: temurin
           java-version: "17"
 
       - uses: subosito/flutter-action@v2
+        if: steps.skip.outputs.skip != 'true'
         with:
           channel: stable
           flutter-version: "3.47.1"
           cache: true
 
       - name: Install dependencies
+        if: steps.skip.outputs.skip != 'true'
         run: flutter pub get
 
       - name: Write Android signing files
+        if: steps.skip.outputs.skip != 'true'
         run: |
           mkdir -p android/keystore
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/keystore/fva_songs_release.jks
@@ -71,9 +98,11 @@ jobs:
           } > android/key.properties
 
       - name: Build signed release APK
+        if: steps.skip.outputs.skip != 'true'
         run: flutter build apk --release
 
       - name: Stage APK for Hosting
+        if: steps.skip.outputs.skip != 'true'
         run: |
           version_line="$(sed -n 's/^version: //p' pubspec.yaml)"
           export VERSION_NAME="${version_line%%+*}"
@@ -81,6 +110,7 @@ jobs:
           bash scripts/ci/prepare_hosting_release.sh
 
       - name: Upload APK artifact
+        if: steps.skip.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: fva-songs-apk
@@ -88,6 +118,7 @@ jobs:
           if-no-files-found: error
 
       - name: Deploy Firebase
+        if: steps.skip.outputs.skip != 'true'
         env:
           DEPLOY_RULES: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_rules || github.event_name != 'workflow_dispatch' }}
         run: |
