@@ -354,10 +354,10 @@ class AppLocalizationsMg extends AppLocalizations {
   String get aboutTitle => 'Momba';
 
   @override
-  String get aboutAuthorName => 'Moïse';
+  String get aboutAuthorName => 'MOISE Rajesearison';
 
   @override
-  String get aboutAuthorRole => 'Mpamorona · traikefa 6 taona';
+  String get aboutAuthorRole => 'Mpamorona';
 
   @override
   String get aboutBody =>

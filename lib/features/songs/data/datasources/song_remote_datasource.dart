@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/song.dart';
@@ -23,22 +25,50 @@ class SongRemoteDataSource {
   /// Filtre Firestore `status == approved` (index champ unique, pas d'index
   /// composite). Le tri `number` reste côté client.
   Stream<List<Song>> watchSongs() {
-    return _songs
-        .where('status', isEqualTo: SongStatus.approved.name)
-        .snapshots()
-        .map((snapshot) {
-      final songs = snapshot.docs
-          .map(
-            (doc) => SongModel.fromFirestore(
-              doc.id,
-              doc.data(),
-              includeSections: false,
-            ).song,
-          )
-          .toList()
-        ..sort((a, b) => SongNumberComparator.compare(a.number, b.number));
-      return songs;
-    });
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? sub;
+    late final StreamController<List<Song>> controller;
+    Timer? retryTimer;
+
+    void listenApproved() {
+      sub?.cancel();
+      sub = _songs
+          .where('status', isEqualTo: SongStatus.approved.name)
+          .snapshots()
+          .listen(
+        (snapshot) {
+          final songs = snapshot.docs
+              .map(
+                (doc) => SongModel.fromFirestore(
+                  doc.id,
+                  doc.data(),
+                  includeSections: false,
+                ).song,
+              )
+              .toList()
+            ..sort((a, b) => SongNumberComparator.compare(a.number, b.number));
+          controller.add(songs);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (error is FirebaseException && error.code == 'permission-denied') {
+            retryTimer?.cancel();
+            retryTimer = Timer(const Duration(milliseconds: 400), () {
+              if (!controller.isClosed) listenApproved();
+            });
+            return;
+          }
+          controller.addError(error, stack);
+        },
+      );
+    }
+
+    controller = StreamController<List<Song>>(
+      onListen: listenApproved,
+      onCancel: () async {
+        retryTimer?.cancel();
+        await sub?.cancel();
+      },
+    );
+    return controller.stream;
   }
 
   /// Chant complet. Lecture **cache d'abord** (le snapshot catalogue a déjà

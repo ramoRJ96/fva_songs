@@ -19,6 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Reject machine-specific Gradle JDK path
+        run: |
+          if grep -q '^org.gradle.java.home=' android/gradle.properties; then
+            echo "org.gradle.java.home must not be committed (Windows/Mac path)."
+            echo "Set it in ~/.gradle/gradle.properties on that machine instead."
+            exit 1
+          fi
+
       - uses: subosito/flutter-action@v2
         with:
           # Same pin as CD. 3.41.0 has no scrollCacheExtent; unpinned stable drifted to 3.47.1.

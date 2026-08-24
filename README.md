@@ -82,7 +82,22 @@ test/                         # Mirrors lib/ structure — see Testing section
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (Dart SDK `^3.10.1`, see `pubspec.yaml`)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) **3.47.1** (CI/CD pin). With [FVM](https://fvm.app): `fvm install 3.47.1 && fvm use 3.47.1`
+- **JDK 17 or 21** for Android builds (JDK 25 breaks the Kotlin DSL). Do **not** put `org.gradle.java.home` in `android/gradle.properties` — that path is machine-specific and breaks the other OS. Set it per computer in the **user** Gradle file instead:
+
+  macOS (`~/.gradle/gradle.properties`):
+
+  ```properties
+  org.gradle.java.home=/Applications/Android Studio.app/Contents/jbr/Contents/Home
+  ```
+
+  Windows (`%USERPROFILE%\.gradle\gradle.properties`):
+
+  ```properties
+  org.gradle.java.home=D:\\Utilisateurs\\mrajesearison\\Documents\\jdk-21.0.6+7
+  ```
+
+  Adjust the Windows path if your JDK lives elsewhere.
 - A [Firebase](https://console.firebase.google.com) project with **Firestore**, **Authentication** (Anonymous + Email/Password providers enabled), and (optionally) **Hosting**
 - [Firebase CLI](https://firebase.google.com/docs/cli) (`npm install -g firebase-tools`) if you plan to deploy Firestore rules or Hosting
 - Xcode (for iOS) and/or Android Studio (for Android) with a configured simulator/emulator
@@ -207,7 +222,7 @@ Add these repository secrets (Settings → Secrets and variables → Actions). N
 | `ANDROID_KEY_ALIAS` | `keyAlias` |
 | `FIREBASE_TOKEN` | `firebase login:ci` (project `fvasongs-d8055`) |
 
-The workflow writes signing files only on the GitHub runner, copies the APK to `hosting/fva-songs.bin`, updates the landing version string from `pubspec.yaml`, and runs `firebase deploy`. See `spec.md` §20.6.
+The workflow writes signing files only on the GitHub runner, copies the APK to `hosting/fva-songs.bin`, updates the landing version string from `pubspec.yaml`, and runs `firebase deploy`. See `spec.md` §20.8.
 
 ## Firestore Data Model
 

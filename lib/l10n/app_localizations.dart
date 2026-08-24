@@ -755,13 +755,13 @@ abstract class AppLocalizations {
   /// No description provided for @aboutAuthorName.
   ///
   /// In fr, this message translates to:
-  /// **'Moïse'**
+  /// **'MOISE Rajesearison'**
   String get aboutAuthorName;
 
   /// No description provided for @aboutAuthorRole.
   ///
   /// In fr, this message translates to:
-  /// **'Développeur · 6 ans d\'expérience'**
+  /// **'Développeur'**
   String get aboutAuthorRole;
 
   /// No description provided for @aboutBody.

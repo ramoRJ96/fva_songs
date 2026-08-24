@@ -59,6 +59,29 @@ void main() {
       expect(await dataSource.isCurrentUserAdmin(), isTrue);
     });
 
+    test('true si user.email est vide mais l\'e-mail saisi est dans config/admins',
+        () async {
+      final auth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(
+          uid: 'uid-empty-email',
+          isAnonymous: false,
+          email: '',
+        ),
+      );
+      await firestore.collection('config').doc('admins').set({
+        'emails': ['saisi@mail.com'],
+      });
+      final dataSource = AuthRemoteDataSource(auth: auth, firestore: firestore);
+
+      await dataSource.signInWithEmail(
+        email: 'saisi@mail.com',
+        password: 'secret',
+      );
+
+      expect(await dataSource.isCurrentUserAdmin(), isTrue);
+    });
+
     test('true si l\'email figure dans config/admins.emails', () async {
       final auth = MockFirebaseAuth(
         signedIn: true,

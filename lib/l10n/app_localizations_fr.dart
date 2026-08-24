@@ -356,10 +356,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aboutTitle => 'À propos';
 
   @override
-  String get aboutAuthorName => 'Moïse';
+  String get aboutAuthorName => 'MOISE Rajesearison';
 
   @override
-  String get aboutAuthorRole => 'Développeur · 6 ans d\'expérience';
+  String get aboutAuthorRole => 'Développeur';
 
   @override
   String get aboutBody =>

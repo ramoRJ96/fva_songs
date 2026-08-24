@@ -1,8 +1,8 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.14  
-**Version de l’application :** 0.1.3+5  
-**Date :** 21 août 2026  
+**Version du document :** 1.18  
+**Version de l’application :** 0.1.4+6  
+**Date :** 24 août 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
 Ce document décrit le produit tel qu’il est implémenté. Toute évolution (nouvelle fonctionnalité, changement de schéma Firestore, nouveau rôle, nouvelle convention) doit mettre à jour ce fichier.
@@ -173,7 +173,7 @@ Résultat :
 ### 3.9 À propos
 
 - Icône info dans l’AppBar de la liste → `/about` (`AboutScreen`).
-- Présentation de Moïse (développeur, 6 ans d’expérience) et du motif de l’app (retrouver un chant et la tonalité de référence pour les musiciens de l’église).
+- Présentation de MOISE Rajesearison (développeur) et du motif de l’app (retrouver un chant et la tonalité de référence pour les musiciens de l’église).
 - L’app est gratuite ; un don passe par e-mail `moiseraidjy@gmail.com` (`mailto`) ou WhatsApp `034 25 228 31` (`https://wa.me/261342522831`, `url_launcher`).
 - Version affichée via `package_info_plus`.
 - Copy 100 % l10n FR/MG.
@@ -465,7 +465,7 @@ updatedAt: string ISO-8601 UTC
 
 Comportement datasource (`SongRemoteDataSource`) :
 
-- `watchSongs` : query Firestore `where status == approved` (index champ unique), tri client `number`. Parse **sans** `sections` (`includeSections: false`). Documents **sans** champ `status` ne matchent pas la query (toutes les écritures actuelles posent `status`). La recherche reste possible via `searchText`. Le SDK mobile **ne projette pas** les champs : le document complet transite encore, mais n’est pas retenu en RAM côté modèle liste.
+- `watchSongs` : query Firestore `where status == approved` (index champ unique), tri client `number`. Parse **sans** `sections` (`includeSections: false`). Documents **sans** champ `status` ne matchent pas la query (toutes les écritures actuelles posent `status`). La recherche reste possible via `searchText`. Le SDK mobile **ne projette pas** les champs : le document complet transite encore, mais n’est pas retenu en RAM côté modèle liste. Un `PERMISSION_DENIED` (trou auth logout → anonyme) **n’efface pas** la dernière liste : pas d’erreur UI, relance après 400 ms. La liste garde aussi les données déjà affichées (`skipLoadingOnReload`, `skipError`).
 - `getById` : chant **complet**. Lecture **cache d’abord** (`GetOptions(source: cache)`), puis `get()` réseau / SDK si miss. `null` si absent **ou** non `approved`.
 - `addApprovedSong` : force `status: approved`, calcule `searchText`, `collection.add`.
 - `updateSong` : `set(merge: true)`, force `approved` + `searchText`.
@@ -578,12 +578,13 @@ L’écran vérifie ensuite `isCurrentUserAdmin()`. Un compte Auth valide mais h
 Ordre dans `_isAdminUser` :
 
 1. Document `admins/{uid}` existe → true  
-2. Pas d’e-mail → false  
-3. Lecture `config/admins.emails` (comparaison lower-case trimmed) ; en cas d’erreur → false
+2. E-mail = `user.email`, sinon l’e-mail saisi au login (`_lastSignInEmail` ; `User.email` peut être vide juste après `signInWithEmailAndPassword` sur Android)  
+3. Pas d’e-mail → false  
+4. Lecture `config/admins.emails` (comparaison lower-case trimmed) ; en cas d’erreur → false
 
 Le stream `watchIsAdmin` se recalcule à chaque `authStateChanges`.
 
-Aucun e-mail n’est codé en dur : le premier admin s’ajoute via la console (`admins/{uid}` ou `config/admins`).
+Aucun e-mail n’est codé en dur dans le client : le premier admin s’ajoute via la console (`admins/{uid}` ou `config/admins`).
 
 ### 11.4 Logout admin
 
@@ -776,7 +777,7 @@ songFilterServiceProvider  → const SongFilterService()
 1. Persistence Firestore native Android/iOS, cache illimité.  
 2. `watchSongs` émet d’abord le cache puis les mises à jour réseau.  
 3. `getById` lit d’abord le cache (documents déjà reçus par le snapshot), donc le détail est immédiat après un catalogue chargé.  
-4. L’UI (`catalogAsync.when`) gère loading / error / data. En cas d’erreur réseau après un cache valide, Riverpod peut conserver la dernière data selon le cycle de vie du provider.  
+4. L’UI (`catalogAsync.when`) gère loading / error / data. `skipLoadingOnReload`, `skipLoadingOnRefresh` et `skipError` : une erreur ou un reload n’efface pas la dernière liste déjà affichée.  
 5. Pull-to-refresh force un nouvel abonnement / relecture.  
 6. Les **écritures** (favori, soumission) nécessitent typiquement le réseau ; en offline elles restent en file d’attente Firestore jusqu’à reconnexion (comportement SDK), sous réserve des rules une fois synchronisées.  
 7. Auth anonyme : le `uid` est persisté par le SDK Auth sur l’appareil → favoris stables tant que l’app n’est pas réinstallée / données effacées.
@@ -851,7 +852,7 @@ Non couvert (volontairement, hors unitaires) : tests de widgets/golden, tests d�
 
 Commande : `flutter test`
 
-CI : GitHub Actions (voir §20.5). CD : voir §20.6.
+CI : GitHub Actions (voir §20.7). CD : voir §20.8.
 
 ---
 
@@ -859,10 +860,23 @@ CI : GitHub Actions (voir §20.5). CD : voir §20.6.
 
 ### 20.1 Versioning
 
-`pubspec.yaml` : `version: 0.1.3+5`  
-→ `versionName` 0.1.3, `versionCode` 5 (nécessaire pour réinstaller par-dessus l’APK précédent).
+`pubspec.yaml` : `version: 0.1.4+6`  
+→ `versionName` 0.1.4, `versionCode` 6 (nécessaire pour réinstaller par-dessus l’APK précédent).
 
-### 20.2 Signature Android
+### 20.2 JDK Gradle (Mac + Windows)
+
+Gradle exige JDK **17 ou 21** (JDK 25 casse le Kotlin DSL). Le chemin est **par machine**, jamais dans `android/gradle.properties` (CI refuse `org.gradle.java.home=` commité).
+
+Chaque poste pose le sien dans le fichier **utilisateur** Gradle :
+
+| OS | Fichier | Exemple |
+| --- | --- | --- |
+| macOS | `~/.gradle/gradle.properties` | `/Applications/Android Studio.app/Contents/jbr/Contents/Home` |
+| Windows | `%USERPROFILE%\.gradle\gradle.properties` | `D:\Utilisateurs\...\jdk-21.0.6+7` |
+
+Le CD retire encore la ligne si elle réapparaît dans le dépôt.
+
+### 20.3 Signature Android
 
 - `android/key.properties` + `android/keystore/fva_songs_release.jks` (**gitignorés**)
 - `android/app/build.gradle.kts` : si le fichier existe → `signingConfigs.release` ; sinon fallback **debug** (pour `flutter run --release` local)
@@ -875,7 +889,7 @@ flutter build apk --release
 
 Sortie : `build/app/outputs/flutter-apk/app-release.apk`
 
-### 20.3 Firebase Hosting (contournement Spark)
+### 20.4 Firebase Hosting (contournement Spark)
 
 Le plan Spark **interdit d’uploader** un fichier dont l’extension est `.apk`. Le binaire reste donc stocké en `hosting/fva-songs.bin` (gitignoré).
 
@@ -896,18 +910,18 @@ Procédure :
 
 iOS : `flutter build ipa` + Apple Developer Program — **non livré**.
 
-### 20.4 Mise à jour in-app (hors Play Store)
+### 20.5 Mise à jour in-app (hors Play Store)
 
 - Fichier public `hosting/app-version.json` : `versionName`, `versionCode`, `downloadUrl` (`Cache-Control: no-cache` dans `firebase.json`).
 - Au démarrage, `AppUpdateListener` compare le `versionCode` local (`package_info_plus`) au manifeste Hosting (`lib/core/updates/`).
 - Si une version plus récente existe → dialogue FR/MG avec lien vers `/fva-songs.apk` (`url_launcher`).
 - **Installation par-dessus** : Android remplace l’app si le `versionCode` est supérieur et la **même clé de signature** est utilisée.
 
-### 20.5 Firebase Auth (console)
+### 20.6 Firebase Auth (console)
 
 Providers activés : Anonymous, Email/Password (`firebase.json` section `auth` documentaire + console).
 
-### 20.6 CI (GitHub Actions)
+### 20.7 CI (GitHub Actions)
 
 Fichier : `.github/workflows/ci.yml`.
 
@@ -915,16 +929,17 @@ Déclenchement : chaque **pull request**, chaque **push** sur `main`, et chaque 
 
 Job unique (`ubuntu-latest`) :
 
-1. `flutter pub get`
-2. `flutter gen-l10n` puis `git diff --exit-code lib/l10n/` (les `.dart` générés doivent être commités)
-3. `flutter analyze`
-4. `flutter test`
+1. Refus si `android/gradle.properties` contient `org.gradle.java.home=` (chemin machine, casse l’autre OS)
+2. `flutter pub get`
+3. `flutter gen-l10n` puis `git diff --exit-code lib/l10n/` (les `.dart` générés doivent être commités)
+4. `flutter analyze`
+5. `flutter test`
 
 SDK CI / CD : Flutter **3.47.1** (channel `stable`) — même pin sur `ci.yml` et `cd.yml`. `pubspec.lock` exige Dart ≥ 3.11 / Flutter ≥ 3.41 (`wakelock_plus` 1.7). Ne pas laisser un workflow sans `flutter-version` : le stable non piné dérive (ex. 3.47 vs 3.41) et `flutter analyze` diverge (`cacheExtent` vs `scrollCacheExtent`).
 
-Le CD (§20.7) se lance **après un CI vert sur `main`**. CI et CD restent des workflows distincts.
+Le CD (§20.8) se lance **après un CI vert sur `main`**. CI et CD restent des workflows distincts.
 
-### 20.7 CD (GitHub Actions)
+### 20.8 CD (GitHub Actions)
 
 Fichier : `.github/workflows/cd.yml`.
 
@@ -935,6 +950,8 @@ Fichier : `.github/workflows/cd.yml`.
 - Publication d’une **GitHub Release** (`release: published`) — déploie toujours Hosting **et** `firestore.rules`.
 
 Le job déploie le SHA du CI qui a réussi (ou le ref choisi pour un lancement manuel). Les rules Firestore déployées sont celles de ce SHA.
+
+`android/gradle.properties` ne doit **pas** contenir un `org.gradle.java.home` machine (chemin Windows ou Mac) : ça casse l’autre OS. Le CD retire cette ligne sur le runner.
 
 Job unique (`ubuntu-latest`), Flutter **3.47.1**, JDK 17 :
 
@@ -984,6 +1001,8 @@ Le runtime ne lit **pas** ces fichiers : le catalogue vit uniquement dans Firest
 8. **CD sur `main` uniquement** — un push `feature/**` ne déploie pas. `[skip cd]` dans le message de commit saute le déploiement.  
 9. **Trailer git Cursor** — `git commit` dans l’IDE peut injecter `Co-authored-by: Cursor`. Contournement opérationnel : `commit-tree` (voir `AGENTS.md`, section Git). Ne pas réécrire l’historique déjà poussé, sauf demande explicite.
 10. **Analytics sans historique** — GA4 ne remonte pas les usages avant l’activation du SDK / du tag landing.
+11. **Trou auth login admin** — un `signOut` puis anonyme peut faire un `PERMISSION_DENIED` sur `songs`. Le catalogue **reste à l’écran** (dernière liste + relance 400 ms). Sans `admins/{uid}` ni `config/admins`, un compte Auth valide est refusé fonctionnellement (l’écran déconnecte).
+12. **Avertissements Flutter 3.47 (Gradle / AGP / Kotlin)** — le tool demande Gradle ≥ 9.1, AGP ≥ 9.0.1, Kotlin ≥ 2.3.20. Le projet reste en Gradle **8.14** / AGP **8.11.1** / Kotlin **2.2.20** : AGP 9 casse à la fois `firebase_analytics` 11.6.0 (`kotlin-android`) et `jni` 1.0.1 (built-in Kotlin). Non bloquant.
 
 ---
 

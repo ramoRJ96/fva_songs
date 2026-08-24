@@ -16,6 +16,10 @@ class AuthRemoteDataSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
 
+  /// E-mail saisi au dernier login. Sur Android, `User.email` peut rester
+  /// vide juste après `signInWithEmailAndPassword`.
+  String? _lastSignInEmail;
+
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
   User? get currentUser => _auth.currentUser;
@@ -26,13 +30,21 @@ class AuthRemoteDataSource {
     required String email,
     required String password,
   }) async {
+    final trimmed = email.trim();
     await _auth.signInWithEmailAndPassword(
-      email: email.trim(),
+      email: trimmed,
       password: password,
     );
+    _lastSignInEmail = trimmed.toLowerCase();
+    try {
+      await _auth.currentUser?.reload();
+    } catch (_) {
+      // Le profil peut encore se synchroniser ; _lastSignInEmail suffit.
+    }
   }
 
   Future<void> signOutToAnonymous() async {
+    _lastSignInEmail = null;
     await _auth.signOut();
     await _auth.signInAnonymously();
   }
@@ -54,7 +66,10 @@ class AuthRemoteDataSource {
     final uidDoc = await _firestore.collection('admins').doc(user.uid).get();
     if (uidDoc.exists) return true;
 
-    final email = user.email?.trim().toLowerCase();
+    var email = user.email?.trim().toLowerCase();
+    if (email == null || email.isEmpty) {
+      email = _lastSignInEmail;
+    }
     if (email == null || email.isEmpty) return false;
 
     try {

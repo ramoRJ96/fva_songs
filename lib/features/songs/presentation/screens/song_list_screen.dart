@@ -157,6 +157,9 @@ class _SongsResults extends ConsumerWidget {
     final query = ref.watch(searchQueryProvider);
 
     return catalogAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
+      skipError: true,
       loading: () => SliverFillRemaining(
         child: Center(child: Text(l10n.loadingSongs)),
       ),
