@@ -1,8 +1,8 @@
 # FVA Songs — Spécification technique
 
-**Version du document :** 1.18  
+**Version du document :** 1.19  
 **Version de l’application :** 0.1.4+6  
-**Date :** 24 août 2026  
+**Date :** 7 septembre 2026  
 **Statut :** source de vérité pour l’architecture, les fonctionnalités et les règles métier.
 
 Ce document décrit le produit tel qu’il est implémenté. Toute évolution (nouvelle fonctionnalité, changement de schéma Firestore, nouveau rôle, nouvelle convention) doit mettre à jour ce fichier.
@@ -974,6 +974,18 @@ Job unique (`ubuntu-latest`), Flutter **3.47.1**, JDK 17 :
 | `FIREBASE_TOKEN` | Token CI (`firebase login:ci`) |
 
 Le build local (`flutter build apk --release` + copie + `firebase deploy`) reste possible sans Actions.
+
+### 20.9 Environnement Cloud Agent (Cursor)
+
+Fichiers : `.cursor/environment.json` + `.cursor/install.sh` (versionnés → l’environnement suit les branches et les PR ; aucune config dashboard concurrente).
+
+`install.sh` (idempotent) prépare la même boucle que la CI :
+
+1. Clone **Flutter 3.47.1** (pin `.fvmrc`) dans `~/flutter` et l’expose via des liens `/usr/local/bin/{flutter,dart}` (pas de modification de profil shell, pas de variable d’environnement requise).
+2. Installe le **SDK Android** (cmdline-tools, `platform-tools`, `platforms;android-35/36`, `build-tools;36.0.0`, `cmake;3.22.1`), accepte les licences, enregistre le chemin (`flutter config --android-sdk` ; `flutter` régénère ensuite `android/local.properties` au build).
+3. `flutter precache --android`, `flutter pub get`, `flutter gen-l10n`.
+
+Permet dans un agent Cloud : `flutter analyze`, `flutter test`, `flutter build apk --debug`. Le build **release** signé et le déploiement Firebase restent réservés au CD (§20.8, secrets GitHub) : l’environnement Cloud ne porte ni keystore ni `FIREBASE_TOKEN`. JDK 21 fourni par l’image de base (compatible §20.2).
 
 ---
 
