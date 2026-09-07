@@ -51,4 +51,4 @@ flutter pub get
 flutter gen-l10n
 
 echo "==> Install complete"
-flutter --version
+dart --version
